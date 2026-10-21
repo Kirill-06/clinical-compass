@@ -56,6 +56,9 @@ abstract final class Fmt {
     return '${l.day} ${_monthsLong[l.month - 1]} ${l.year}';
   }
 
+  /// «Миронова А. С.» без переноса между фамилией и инициалами.
+  static String noBreak(String s) => s.replaceAll(' ', '\u00A0');
+
   /// 17 октября
   static String dayMonth(DateTime d) {
     final l = _local(d);

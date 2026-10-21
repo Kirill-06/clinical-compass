@@ -15,6 +15,7 @@ from clinical_compass.domain.enums import (
     LabAnalyte,
     MissedReason,
     RouteDecision,
+    SafetyAction,
     Severity,
     SymptomType,
     Tri,
@@ -125,3 +126,19 @@ class FactsRequest(BaseModel):
     symptoms: list[dict[str, Any]] | None = None
     risk_signals: list[dict[str, Any]] | None = None
     labs: list[dict[str, Any]] | None = None
+
+
+class LaunchRequest(_Request):
+    """Запрос МИС на открытие окна: идентификаторы врача и пациента в самой МИС."""
+
+    doctor_external_id: str = Field(min_length=1, max_length=64)
+    patient_external_id: str = Field(min_length=1, max_length=64)
+
+
+class LaunchExchangeRequest(_Request):
+    code: str = Field(min_length=16, max_length=128)
+
+
+class SafetyActionRequest(_Request):
+    alert_id: str = Field(min_length=1, max_length=64)
+    action: SafetyAction

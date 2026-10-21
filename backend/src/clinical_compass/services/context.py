@@ -14,6 +14,7 @@ from clinical_compass.domain.enums import Role
 from clinical_compass.domain.extraction import Extractor
 from clinical_compass.repositories.care import CareRepository
 from clinical_compass.repositories.facts import FactsRepository
+from clinical_compass.repositories.integrations import IntegrationRepository
 from clinical_compass.repositories.people import PeopleRepository
 from clinical_compass.repositories.workflow import (
     AlertRepository,
@@ -111,6 +112,7 @@ class Repositories:
     bookings: BookingRepository
     audit: AuditRepository
     idempotency: IdempotencyRepository
+    integrations: IntegrationRepository
 
     @classmethod
     def of(cls, session: Session) -> "Repositories":
@@ -123,6 +125,7 @@ class Repositories:
             bookings=BookingRepository(session),
             audit=AuditRepository(session),
             idempotency=IdempotencyRepository(session),
+            integrations=IntegrationRepository(session),
         )
 
 

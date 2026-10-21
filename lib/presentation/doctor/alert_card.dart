@@ -51,6 +51,7 @@ class _AlertCardState extends State<AlertCard> {
     final pinned = v['pinned'] == true;
     final why = [for (final f in v['why'] as List? ?? const []) asJson(f)];
     final template = v['patient_template'] is Map ? asJson(v['patient_template']) : null;
+    final safety = [for (final e in v['patient_safety_actions'] as List? ?? const []) asJson(e)];
     final now = widget.now ?? DateTime.now();
 
     return Container(
@@ -99,6 +100,7 @@ class _AlertCardState extends State<AlertCard> {
             Text(v['rule_title']! as String, style: AppType.body.copyWith(fontSize: 14)),
             if (why.isNotEmpty)
               Text(why.first['summary']! as String, style: AppType.small, maxLines: 2, overflow: TextOverflow.ellipsis),
+            if (safety.isNotEmpty) ...[const SizedBox(height: Space.x2), PatientSafetyActions(events: safety)],
             const SizedBox(height: Space.x2),
             Wrap(
               spacing: Space.x2,
@@ -193,4 +195,42 @@ class _AlertCardState extends State<AlertCard> {
       ),
     );
   }
+}
+
+/// Что пациент сделал с экстренным предупреждением: увидел, позвонил 112/103, закрыл.
+class PatientSafetyActions extends StatelessWidget {
+  const PatientSafetyActions({super.key, required this.events});
+
+  final List<Json> events;
+
+  static (String, IconData, StatusTone) _visual(String action) => switch (action) {
+    'shown' => ('увидел(а) экран «Позвоните 112»', Icons.visibility_outlined, StatusTone.neutral),
+    'call_112' => ('нажал(а) «Позвонить 112»', Icons.call, StatusTone.danger),
+    'call_103' => ('нажал(а) «Скорая — 103»', Icons.local_hospital_outlined, StatusTone.danger),
+    'message_doctor' => ('перешёл(ла) к сообщению врачу', Icons.chat_bubble_outline, StatusTone.info),
+    'dismissed' => ('закрыл(а): «Я в безопасности»', Icons.check, StatusTone.ok),
+    _ => (action, Icons.info_outline, StatusTone.neutral),
+  };
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: Space.x2,
+    runSpacing: Space.x1,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      const Text('Пациент:', style: AppType.caption),
+      for (final e in events)
+        Builder(
+          builder: (context) {
+            final (label, icon, tone) = _visual(e['action']! as String);
+            return StatusBadge(
+              label: '$label · ${Fmt.time(DateTime.parse(e['at']! as String))}',
+              tone: tone,
+              icon: icon,
+              dense: true,
+            );
+          },
+        ),
+    ],
+  );
 }

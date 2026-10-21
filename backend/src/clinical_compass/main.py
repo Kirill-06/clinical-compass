@@ -7,13 +7,14 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import RequestResponseEndpoint
 
 from clinical_compass import SCHEMA_VERSION
 from clinical_compass.api.errors import install_error_handlers
-from clinical_compass.api.routers import admin, auth, doctor, internal, patients, system
+from clinical_compass.api.routers import admin, auth, doctor, integrations, internal, patients, system
 from clinical_compass.api.runtime import Runtime
 from clinical_compass.config import Settings, get_settings
 from clinical_compass.db.migrations import upgrade_to_head
@@ -58,12 +59,32 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
         expose_headers=["Content-Disposition"],
     )
     install_error_handlers(app)
-    for router in (system.router, auth.router, patients.router, doctor.router, admin.router, internal.router):
-        app.include_router(router)
+    _install_frame_policy(app, settings)
+    routers = (system, auth, patients, doctor, admin, internal, integrations)
+    for module in routers:
+        app.include_router(module.router)
     if settings.web_dir is not None:
         # Собранное Flutter Web приложение с того же адреса: без CORS и отдельного сервера.
         app.mount("/", StaticFiles(directory=settings.web_dir, html=True), name="web")
     return app
+
+
+_REVALIDATE_SUFFIXES = (".html", ".js", ".json", ".wasm")
+
+
+def _install_frame_policy(app: FastAPI, settings: Settings) -> None:
+    """Окно сервиса можно встроить только в разрешённые МИС (CSP frame-ancestors)."""
+    policy = "frame-ancestors " + " ".join(settings.frame_ancestors)
+
+    @app.middleware("http")
+    async def frame_ancestors(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = policy
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        if request.url.path == "/" or request.url.path.endswith(_REVALIDATE_SUFFIXES):
+            # Сборка Flutter обновляется целиком: браузер сверяет ETag, а не берёт старый main.dart.js.
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 def app_factory() -> FastAPI:

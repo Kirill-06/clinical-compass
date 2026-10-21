@@ -73,7 +73,17 @@ class ApiClient extends ChangeNotifier {
   String? _token;
   SessionUser? _user;
   ContractMeta? _meta;
+  String? _embeddedFrom;
   int _requestCounter = 0;
+  final _emergencies = StreamController<Json>.broadcast();
+  final _announcedEmergencies = <String>{};
+
+  /// Экстренные предупреждения пациенту (`recommend_ambulance`) из ответов сервера —
+  /// каждое один раз за сессию приложения.
+  Stream<Json> get emergencies => _emergencies.stream;
+
+  /// Название МИС, если приложение открыто окном внутри неё (ЕМИАС, 1С).
+  String? get embeddedFrom => _embeddedFrom;
 
   SessionUser? get user => _user;
 
@@ -104,8 +114,29 @@ class ApiClient extends ChangeNotifier {
       }
       throw ApiException(res.status, message);
     }
+    final json = res.json;
+    if (json is Map && json['patient_notices'] is List) {
+      _announceEmergencies([for (final n in json['patient_notices'] as List) asJson(n)]);
+    }
     if (write) notifyListeners();
-    return res.json;
+    return json;
+  }
+
+  void _announceEmergencies(Iterable<Json> notices) {
+    for (final n in notices) {
+      final id = n['alert_id'];
+      if (n['patient_action'] == PatientAction.recommendAmbulance.wire &&
+          id is String &&
+          _announcedEmergencies.add(id)) {
+        _emergencies.add(n);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _emergencies.close();
+    super.dispose();
   }
 
   Json _obj(Object? v) => asJson(v, 'ответ сервера');
@@ -134,18 +165,38 @@ class ApiClient extends ChangeNotifier {
     return user;
   }
 
+  /// Окно внутри МИС: обменять одноразовый код запуска на сессию врача.
+  /// Возвращает id пациента, карточку которого открыла МИС.
+  Future<String> openFromMis(String code) async {
+    final j = _obj(await _call('POST', '/integrations/launch/exchange', body: {'code': code}));
+    _token = reqString(j, 'token');
+    _user = SessionUser.fromJson(asJson(j['user']));
+    _embeddedFrom = reqString(j, 'system_title');
+    return reqString(j, 'patient_id');
+  }
+
   /// Оповестить экраны о смене состояния (после навигации).
   void refresh() => notifyListeners();
 
   void signOut() {
     _token = null;
     _user = null;
+    _embeddedFrom = null;
     notifyListeners();
   }
 
   // -------------------------------------------------------------- patient
 
-  Future<Json> dashboard(String pid) async => _obj(await _call('GET', '/patients/$pid/dashboard'));
+  Future<Json> dashboard(String pid) async {
+    final d = _obj(await _call('GET', '/patients/$pid/dashboard'));
+    final pending = {for (final id in d['emergency_alert_ids'] as List? ?? const []) id as String};
+    _announceEmergencies([
+      for (final n in d['notices'] as List? ?? const [])
+        if (pending.contains(asJson(n)['alert_id'])) asJson(n),
+    ]);
+    return d;
+  }
+
   Future<Json> history(String pid) async => _obj(await _call('GET', '/patients/$pid/history'));
 
   Future<Json> submitQuestionnaire(String pid, Instrument i, List<int> items, {required String idempotencyKey}) async =>
@@ -229,6 +280,10 @@ class ApiClient extends ChangeNotifier {
     }
     return res.bytes;
   }
+
+  /// Действие пациента с экстренным предупреждением — врач увидит его в карточке события.
+  Future<void> safetyAction(String pid, String alertId, String action) async =>
+      await _call('POST', '/patients/$pid/safety-actions', body: {'alert_id': alertId, 'action': action});
 
   Future<Json> patientState(String pid) async => _obj(await _call('GET', '/patients/$pid/state'));
 

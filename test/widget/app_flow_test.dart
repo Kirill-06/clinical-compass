@@ -104,6 +104,34 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('red-flag message slides in the emergency screen with a 112 button', (tester) async {
+    await pumpApp(tester, size: const Size(390, 844));
+    await tapText(tester, 'Корнилова Елена Андреевна');
+    await tapText(tester, 'Написать врачу или приложить файл');
+    await tester.enterText(find.byType(TextField).first, 'Последние дни не хочу жить');
+    await tapText(tester, 'Отправить врачу');
+    expect(find.text('Нужна срочная помощь?'), findsOneWidget);
+    expect(find.text('Позвонить 112'), findsOneWidget);
+    expect(find.text('Скорая помощь — 103'), findsOneWidget);
+    await tapText(tester, 'Я в безопасности, закрыть');
+    expect(find.text('Нужна срочная помощь?'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('MIS launch code opens the patient card in the embedded window', (tester) async {
+    final backend = await pumpApp(tester);
+    final code = (await tester.runAsync(
+      () => backend.demoLaunch('emias', doctor: 'DEMO-EMIAS-DOC-A', patient: 'DEMO-EMIAS-1006'),
+    ))!;
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/embed/launch/$code');
+    await settle(tester);
+    await settle(tester);
+    expect(find.text('открыто из ЕМИАС'), findsOneWidget);
+    expect(find.text('Ковалёв Сергей Дмитриевич'), findsOneWidget);
+    expect(find.text('Пациенты'), findsNothing);
+    await unmount(tester);
+  });
+
   group('layouts without overflow', () {
     const sizes = [Size(320, 640), Size(390, 844), Size(768, 1024), Size(1024, 768), Size(1440, 900)];
     for (final size in sizes) {

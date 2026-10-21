@@ -17,7 +17,7 @@ from clinical_compass.services.errors import NotFoundError, UnauthorizedError
 from clinical_compass.services.presenter import Json
 
 
-def _hash(token: str) -> str:
+def hash_secret(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -38,24 +38,28 @@ class AuthService:
 
     def login(self, user_id: str) -> tuple[str, Principal]:
         principal = self.principal_for(user_id)
+        return self.open_session(principal, self._ttl), principal
+
+    def open_session(self, principal: Principal, ttl: timedelta) -> str:
+        """Выдать токен сессии. В базе хранится только его хэш."""
         token = secrets.token_urlsafe(32)
         now = self._d.clock.now()
         self._d.repos.people.add_session(
             SessionRow(
-                token_hash=_hash(token),
+                token_hash=hash_secret(token),
                 user_id=principal.user_id,
                 role=principal.role.value,
                 created_at=now,
-                expires_at=now + self._ttl,
+                expires_at=now + ttl,
             )
         )
         self._d.audit(principal, "session.created", "session", principal.user_id, None)
-        return token, principal
+        return token
 
     def authenticate(self, token: str | None) -> Principal:
         if not token:
             raise UnauthorizedError("Требуется вход")
-        row = self._d.repos.people.session_by_hash(_hash(token))
+        row = self._d.repos.people.session_by_hash(hash_secret(token))
         if row is None or row.expires_at <= self._d.clock.now():
             raise UnauthorizedError("Сессия истекла, войдите снова")
         return self.principal_for(row.user_id)

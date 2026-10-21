@@ -19,9 +19,12 @@ import 'package:clinical_compass/presentation/shared/labels.dart';
 import 'package:clinical_compass/presentation/shared/live_future.dart';
 
 class PatientDetailScreen extends StatelessWidget {
-  const PatientDetailScreen({super.key, required this.patientId});
+  const PatientDetailScreen({super.key, required this.patientId, this.embedded = false});
 
   final String patientId;
+
+  /// Окно внутри МИС: без перехода к списку пациентов.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -30,16 +33,17 @@ class PatientDetailScreen extends StatelessWidget {
       pollEvery: const Duration(seconds: 30),
       loadingLabel: 'Загружаем карточку пациента…',
       load: () => context.api.dossier(patientId),
-      builder: (context, d) => _Dossier(d: d, now: context.services.clock.now()),
+      builder: (context, d) => _Dossier(d: d, now: context.services.clock.now(), embedded: embedded),
     );
   }
 }
 
 class _Dossier extends StatelessWidget {
-  const _Dossier({required this.d, required this.now});
+  const _Dossier({required this.d, required this.now, required this.embedded});
 
   final Json d;
   final DateTime now;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +68,22 @@ class _Dossier extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Wrap(
-              spacing: Space.x4,
-              runSpacing: Space.x2,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: () => context.go('/doctor/patients'),
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text('Пациенты'),
-                ),
-                const DemoModeStrip(),
-              ],
-            ),
-            const SizedBox(height: Space.x3),
+            if (!embedded) ...[
+              Wrap(
+                spacing: Space.x4,
+                runSpacing: Space.x2,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => context.go('/doctor/patients'),
+                    icon: const Icon(Icons.arrow_back, size: 18),
+                    label: const Text('Пациенты'),
+                  ),
+                  const DemoModeStrip(),
+                ],
+              ),
+              const SizedBox(height: Space.x3),
+            ],
             _Header(d: d),
             const SizedBox(height: Space.x5),
             SectionHeader(
@@ -131,9 +137,11 @@ class _Dossier extends StatelessWidget {
 
   static List<Json> _sorted(List<Json> list) => [...list]
     ..sort((a, b) {
-      final pa = DoctorPriority.fromWire(asJson(a['alert'])['doctor_priority']! as String).rank;
-      final pb = DoctorPriority.fromWire(asJson(b['alert'])['doctor_priority']! as String).rank;
-      return pb.compareTo(pa);
+      final (alertA, alertB) = (asJson(a['alert']), asJson(b['alert']));
+      final pa = DoctorPriority.fromWire(alertA['doctor_priority']! as String).rank;
+      final pb = DoctorPriority.fromWire(alertB['doctor_priority']! as String).rank;
+      // Как в очереди: приоритет, затем по времени поступления.
+      return pa != pb ? pb.compareTo(pa) : (alertA['created_at']! as String).compareTo(alertB['created_at']! as String);
     });
 }
 

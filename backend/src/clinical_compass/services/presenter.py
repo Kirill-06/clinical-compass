@@ -31,6 +31,18 @@ from clinical_compass.services.state import PatientStateService, alert_from_row
 
 Json = dict[str, Any]
 
+_UNITS = {
+    "g/L": "г/л",
+    "g/dL": "г/дл",
+    "U/L": "Ед/л",
+    "umol/L": "мкмоль/л",
+    "mL/min/1.73m2": "мл/мин/1,73 м²",
+}
+"""Единицы анализов в привычной врачу записи."""
+
+SAFETY_AUDIT_PREFIX = "safety."
+"""Префикс записей журнала о действиях пациента с экстренным предупреждением."""
+
 _TRI = {Tri.YES: "да", Tri.NO: "нет", Tri.UNKNOWN: "неизвестно"}
 
 
@@ -199,10 +211,19 @@ class Presenter:
             "acknowledged_by": row.acknowledged_by,
             "resolved_at": iso(row.resolved_at),
             "resolved_by": row.resolved_by,
+            "patient_safety_actions": self.safety_actions(row.id),
         }
         if pinned is not None:
             data["pinned"] = pinned
         return data
+
+    def safety_actions(self, alert_id: str) -> list[Json]:
+        """Что пациент сделал с экстренным предупреждением (журнал `safety.*`)."""
+        return [
+            {"action": e.action.removeprefix(SAFETY_AUDIT_PREFIX), "at": iso(e.at)}
+            for e in reversed(self._d.repos.audit.for_entity("alert", alert_id))
+            if e.action.startswith(SAFETY_AUDIT_PREFIX)
+        ]
 
     def fact_summary(self, patient_id: str, fact_id: str) -> Json:
         """Пересказ факта Patient State для кнопки «Почему?»."""
@@ -286,11 +307,13 @@ class Presenter:
         lab = self._d.repos.facts.lab(patient_id, fact_id)
         if lab is None:
             return None
-        ref = f" (референс до {lab.reference_high:g})" if lab.reference_high is not None else ""
+        ref = _reference_range(lab.reference_low, lab.reference_high)
         name = self._d.contracts.label("lab_analytes", lab.analyte.value)
+        unit = _UNITS.get(lab.unit, lab.unit)
+        sampled = lab.sample_date.strftime("%d.%m.%Y")
         return {
             "kind": "lab",
-            "summary": f"{name} {lab.value:g} {lab.unit}{ref}, проба {lab.sample_date.isoformat()}",
+            "summary": f"{name} {lab.value:g} {unit}{ref}, проба {sampled}",
             "source": "проверено врачом" if lab.doctor_verified else "внесено пациентом, не проверено",
         }
 
@@ -407,3 +430,13 @@ class Presenter:
     def symptom_rows(self, patient_id: str, *, form_only: bool) -> list[Json]:
         rows: list[tuple[SymptomEvent, SymptomEventRow]] = self._d.repos.facts.symptoms(patient_id)
         return [self.symptom(s) for s, _ in reversed(rows) if not form_only or s.source is FactSource.FORM]
+
+
+def _reference_range(low: float | None, high: float | None) -> str:
+    if low is not None and high is not None:
+        return f" (референс {low:g}–{high:g})"
+    if low is not None:
+        return f" (референс от {low:g})"
+    if high is not None:
+        return f" (референс до {high:g})"
+    return ""

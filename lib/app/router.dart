@@ -9,6 +9,7 @@ import 'package:clinical_compass/presentation/doctor/patient_detail_screen.dart'
 import 'package:clinical_compass/presentation/doctor/patients_screen.dart';
 import 'package:clinical_compass/presentation/doctor/queue_screen.dart';
 import 'package:clinical_compass/presentation/doctor/rules_screen.dart';
+import 'package:clinical_compass/presentation/embed/embed_screens.dart';
 import 'package:clinical_compass/presentation/entry/entry_screen.dart';
 import 'package:clinical_compass/presentation/patient/message_screen.dart';
 import 'package:clinical_compass/presentation/patient/patient_home_screen.dart';
@@ -32,15 +33,17 @@ GoRouter buildRouter(AppServices services) {
     redirect: (context, state) {
       final user = services.api.user;
       final path = state.matchedLocation;
+      // Окно из МИС входит по одноразовому коду, без экрана выбора аккаунта.
+      if (path.startsWith('/embed/launch/')) return null;
       if (user == null) return path == '/' ? null : '/';
       final home = homeFor(user.role);
       if (path == '/') return home;
-      final prefix = switch (user.role) {
-        Role.doctor => '/doctor',
-        Role.patient => '/patient',
-        Role.admin => '/admin',
+      final allowed = switch (user.role) {
+        Role.doctor => path.startsWith('/doctor') || path.startsWith('/embed/patient/'),
+        Role.patient => path.startsWith('/patient'),
+        Role.admin => path.startsWith('/admin'),
       };
-      return path.startsWith(prefix) ? null : home;
+      return allowed ? null : home;
     },
     routes: [
       GoRoute(path: '/', pageBuilder: (c, s) => _page(s, const EntryScreen())),
@@ -83,6 +86,15 @@ GoRouter buildRouter(AppServices services) {
       GoRoute(path: '/patient/symptom', parentNavigatorKey: rootKey, builder: (c, s) => const SymptomScreen()),
       GoRoute(path: '/patient/message', parentNavigatorKey: rootKey, builder: (c, s) => const MessageScreen()),
       GoRoute(path: '/admin', pageBuilder: (c, s) => _page(s, const AdminScreen())),
+      GoRoute(
+        path: '/embed/launch/:code',
+        pageBuilder: (c, s) => _page(s, EmbedLaunchScreen(code: s.pathParameters['code'] ?? '')),
+      ),
+      GoRoute(
+        path: '/embed/patient/:id',
+        pageBuilder: (c, s) =>
+            _page(s, EmbedShell(child: PatientDetailScreen(patientId: s.pathParameters['id'] ?? '', embedded: true))),
+      ),
     ],
     errorBuilder: (c, s) => const _NotFound(),
   );

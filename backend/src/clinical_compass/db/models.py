@@ -360,6 +360,36 @@ class AuditEventRow(Base):
     patient_id: Mapped[str | None] = mapped_column(String(_ID))
 
 
+# ---------------------------------------------------------------- интеграции с МИС
+
+
+class ExternalIdentityRow(Base):
+    """Идентификатор пациента или врача во внешней МИС (ЕМИАС, 1С) → внутренний id."""
+
+    __tablename__ = "external_identities"
+    __table_args__ = (UniqueConstraint("system", "kind", "external_id", name="uq_external_identity"),)
+
+    id: Mapped[str] = mapped_column(String(_ID), primary_key=True)
+    system: Mapped[str] = mapped_column(String(16))
+    kind: Mapped[str] = mapped_column(String(16))
+    external_id: Mapped[str] = mapped_column(String(64))
+    internal_id: Mapped[str] = mapped_column(String(_ID), index=True)
+
+
+class LaunchCodeRow(Base):
+    """Одноразовый код запуска окна из МИС. Хранится только хэш кода."""
+
+    __tablename__ = "launch_codes"
+
+    code_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    system: Mapped[str] = mapped_column(String(16))
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id"))
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"))
+    created_at: Mapped[datetime]
+    expires_at: Mapped[datetime]
+    used_at: Mapped[datetime | None]
+
+
 class IdempotencyKeyRow(Base):
     """Повтор запроса с тем же ключом возвращает прежний ответ, а не создаёт дубль."""
 

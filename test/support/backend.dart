@@ -36,12 +36,12 @@ class TestBackend {
   };
 
   static Future<void> prepareTemplate() async {
-    final result = await Process.run('uv', [
-      'run',
-      '--no-sync',
-      'clinical-compass',
-      'seed',
-    ], workingDirectory: 'backend', environment: _env(_template));
+    final result = await Process.run(
+      'uv',
+      ['run', '--no-sync', 'clinical-compass', 'seed'],
+      workingDirectory: 'backend',
+      environment: _env(_template),
+    );
     if (result.exitCode != 0) {
       throw StateError('Не удалось подготовить демо-базу:\n${result.stdout}\n${result.stderr}');
     }
@@ -50,20 +50,33 @@ class TestBackend {
   static Future<TestBackend> start() async {
     final db = _template.copySync('${_root.path}/db_${DateTime.now().microsecondsSinceEpoch}.sqlite');
     final port = await _freePort();
-    final process = await Process.start('uv', [
-      'run',
-      '--no-sync',
-      'clinical-compass',
-      'serve',
-      '--port',
-      '$port',
-    ], workingDirectory: 'backend', environment: _env(db));
+    final process = await Process.start(
+      'uv',
+      ['run', '--no-sync', 'clinical-compass', 'serve', '--port', '$port'],
+      workingDirectory: 'backend',
+      environment: _env(db),
+    );
     final log = StringBuffer();
     process.stdout.transform(utf8.decoder).listen(log.write);
     process.stderr.transform(utf8.decoder).listen(log.write);
     final backend = TestBackend._(process, 'http://127.0.0.1:$port');
     await backend._waitHealthy(log);
     return backend;
+  }
+
+  /// Код запуска окна, как его получила бы МИС (демо-эндпоинт без ключа).
+  Future<String> demoLaunch(String system, {required String doctor, required String patient}) async {
+    final client = HttpClient();
+    try {
+      final req = await client.postUrl(Uri.parse('$baseUrl/integrations/demo/$system/launch'));
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({'doctor_external_id': doctor, 'patient_external_id': patient}));
+      final res = await req.close();
+      final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, Object?>;
+      return body['code']! as String;
+    } finally {
+      client.close();
+    }
   }
 
   Future<void> stop() async {

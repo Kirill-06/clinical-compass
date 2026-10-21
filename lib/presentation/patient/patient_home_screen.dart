@@ -36,7 +36,7 @@ class PatientHomeScreen extends StatelessWidget {
             Semantics(header: true, child: Text('Здравствуйте, ${patient['first_name']}', style: AppType.pageTitle)),
             const SizedBox(height: 2),
             Text(
-              '${_cap(Fmt.weekdayLong(now))}, ${Fmt.dayMonth(now)}${doctor == null ? '' : ' · ваш врач — ${doctor['short_name']}'}',
+              '${_cap(Fmt.weekdayLong(now))}, ${Fmt.dayMonth(now)}${doctor == null ? '' : ' · ваш врач — ${Fmt.noBreak(doctor['short_name']! as String)}'}',
               style: AppType.bodySecondary,
             ),
             const SizedBox(height: Space.x5),

@@ -44,7 +44,11 @@ class PatientStateService:
         responses = self._d.repos.facts.questionnaires(patient_id)
         return [
             schedule_status(
-                self.schedule(patient_id, i), responses, patient.observation_start, self._d.clock.now()
+                self.schedule(patient_id, i),
+                responses,
+                patient.observation_start,
+                self._d.clock.now(),
+                utc_offset_hours=self._d.clock.utc_offset_hours,
             )
             for i in Instrument
         ]

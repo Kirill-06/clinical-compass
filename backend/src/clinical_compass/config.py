@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEV_INTERNAL_TOKEN = "dev-internal-token"
+DEV_INTEGRATION_KEYS = {"emias": "dev-emias-key", "onec": "dev-onec-key"}
 
 
 class Settings(BaseSettings):
@@ -33,6 +34,16 @@ class Settings(BaseSettings):
 
     internal_token: str = Field(default=DEV_INTERNAL_TOKEN, min_length=8)
     """Ключ внутренних эндпоинтов AI-слоя (заголовок X-Internal-Token)."""
+
+    integration_keys: dict[str, str] = Field(default_factory=lambda: dict(DEV_INTEGRATION_KEYS))
+    """Ключи МИС для серверных вызовов `/integrations/{system}/…` (заголовок X-Integration-Key).
+    Формат переменной: `CC_INTEGRATION_KEYS='{"emias": "…", "onec": "…"}'`."""
+
+    frame_ancestors: list[str] = ["'self'"]
+    """Кому разрешено встраивать окно (CSP frame-ancestors): адреса веб-клиентов МИС."""
+
+    launch_code_seconds: int = 120
+    embed_session_minutes: int = 30
 
     cors_origins: list[str] = ["*"]
     clinic_utc_offset_hours: int = 3
