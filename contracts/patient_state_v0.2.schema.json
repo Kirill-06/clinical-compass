@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clinical-compass.local/schemas/patient_state_v0.2.schema.json",
+  "title": "Clinical Compass Patient State v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "patient_id", "updated_at"],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "patient_id": {"type": "string", "minLength": 1},
+    "doctor_id": {"type": ["string", "null"]},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "questionnaire_schedules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/questionnaireSchedule"}
+    },
+    "questionnaires": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/questionnaireResponse"}
+    },
+    "medication_intakes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/medicationIntake"}
+    },
+    "symptoms": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/symptomEvent"}
+    },
+    "risk_signals": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/riskSignal"}
+    },
+    "labs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/labResult"}
+    },
+    "routing": {"$ref": "#/$defs/routingDecision"},
+    "alerts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/alert"}
+    }
+  },
+  "$defs": {
+    "source": {
+      "enum": ["form", "text_llm", "text_lexicon", "clinician", "lab", "derived"]
+    },
+    "confirmation": {
+      "enum": ["pending", "patient_confirmed", "doctor_verified", "corrected", "rejected"]
+    },
+    "doctorPriority": {
+      "enum": ["info", "normal", "high", "urgent"]
+    },
+    "patientAction": {
+      "enum": ["none", "inform_at_next_contact", "contact_doctor_soon", "contact_clinic_today", "recommend_ambulance", "neutral_out_of_leaflet"]
+    },
+    "questionnaireSchedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instrument", "interval_days", "configured_by", "active"],
+      "properties": {
+        "instrument": {"enum": ["GAD7", "PHQ9"]},
+        "interval_days": {"type": "integer", "minimum": 1},
+        "default_interval_days": {"const": 14},
+        "configured_by": {"enum": ["system_default", "doctor"]},
+        "next_due_at": {"type": ["string", "null"], "format": "date-time"},
+        "active": {"type": "boolean"}
+      }
+    },
+    "questionnaireResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "instrument", "administered_at", "item_scores", "completion_status", "source"],
+      "properties": {
+        "id": {"type": "string"},
+        "instrument": {"enum": ["GAD7", "PHQ9"]},
+        "administered_at": {"type": "string", "format": "date-time"},
+        "item_scores": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 3}
+        },
+        "completion_status": {"enum": ["complete", "partial", "skipped"]},
+        "total_score": {"type": ["integer", "null"], "minimum": 0, "maximum": 27},
+        "severity_band": {"type": ["string", "null"]},
+        "baseline_score": {"type": ["integer", "null"]},
+        "delta_from_previous": {"type": ["integer", "null"]},
+        "delta_from_baseline": {"type": ["integer", "null"]},
+        "phq9_item9": {"type": ["integer", "null"], "minimum": 0, "maximum": 3},
+        "source": {"$ref": "#/$defs/source"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"instrument": {"const": "GAD7"}}},
+          "then": {
+            "properties": {
+              "item_scores": {"minItems": 7, "maxItems": 7},
+              "total_score": {"type": ["integer", "null"], "maximum": 21},
+              "phq9_item9": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"instrument": {"const": "PHQ9"}}},
+          "then": {
+            "properties": {
+              "item_scores": {"minItems": 9, "maxItems": 9},
+              "total_score": {"type": ["integer", "null"], "maximum": 27}
+            }
+          }
+        }
+      ]
+    },
+    "medicationIntake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slot_date", "slot", "status", "source", "confirmation"],
+      "properties": {
+        "id": {"type": "string"},
+        "drug": {"type": "string"},
+        "dose_mg": {"type": ["number", "null"]},
+        "slot_date": {"type": "string", "format": "date"},
+        "slot": {"enum": ["morning", "evening"]},
+        "status": {"enum": ["taken", "missed", "unknown"]},
+        "missed_reason": {"enum": ["forgot", "adverse_event", "felt_unwell", "ran_out", "decided_to_stop", "other", "unknown"]},
+        "marked_at": {"type": ["string", "null"], "format": "date-time"},
+        "source": {"$ref": "#/$defs/source"},
+        "confirmation": {"$ref": "#/$defs/confirmation"}
+      }
+    },
+    "symptomEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "normalized_type", "polarity", "experiencer", "temporality", "source", "confirmation"],
+      "properties": {
+        "id": {"type": "string"},
+        "normalized_type": {
+          "enum": ["somnolence", "headache", "dizziness", "asthenia", "paresthesia", "insomnia", "poor_sleep_quality", "anxiety_increased", "attention_disturbance", "slowed_reaction", "dysgeusia", "nausea", "upper_abdominal_pain", "constipation", "back_pain", "muscle_rigidity", "trismus", "hyperhidrosis", "other_unlisted"]
+        },
+        "patient_phrase": {"type": ["string", "null"]},
+        "evidence_span": {"$ref": "#/$defs/evidenceSpan"},
+        "polarity": {"enum": ["present", "absent", "uncertain"]},
+        "experiencer": {"enum": ["patient", "other"]},
+        "temporality": {"enum": ["current", "recent_past", "earlier", "hypothetical"]},
+        "onset_date": {"type": ["string", "null"], "format": "date"},
+        "onset_precision": {"enum": ["day", "week", "approximate", "unknown"]},
+        "existed_before_medication": {"enum": ["yes", "no", "unknown"]},
+        "worsened_since_start": {"enum": ["yes", "no", "unknown"]},
+        "affects_daily_life": {"enum": ["yes", "no", "unknown"]},
+        "severity": {"enum": ["mild", "moderate", "severe", "unknown"]},
+        "status": {"enum": ["ongoing", "resolved", "unknown"]},
+        "interferes_with_driving": {"enum": ["yes", "no", "does_not_drive", "unknown"]},
+        "source": {"$ref": "#/$defs/source"},
+        "confirmation": {"$ref": "#/$defs/confirmation"}
+      }
+    },
+    "riskSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "source", "confirmation", "created_at"],
+      "properties": {
+        "id": {"type": "string"},
+        "type": {"enum": ["self_harm_or_suicidal", "possible_overdose", "possible_allergic_reaction", "pregnancy_or_lactation", "concomitant_drug_mention", "alcohol_use_mention", "intention_to_stop_treatment", "other_concern"]},
+        "value": {"type": ["string", "object", "null"]},
+        "evidence_span": {"$ref": "#/$defs/evidenceSpan"},
+        "source": {"$ref": "#/$defs/source"},
+        "confirmation": {"$ref": "#/$defs/confirmation"},
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "labResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "analyte", "value", "unit", "sample_date", "entered_by", "doctor_verified"],
+      "properties": {
+        "id": {"type": "string"},
+        "analyte": {"enum": ["hemoglobin", "creatinine", "egfr", "cpk", "alt", "ast", "bilirubin_total", "bilirubin_direct", "glucose", "tsh", "t3", "t4", "other"]},
+        "value": {"type": "number"},
+        "unit": {"type": "string"},
+        "reference_low": {"type": ["number", "null"]},
+        "reference_high": {"type": ["number", "null"]},
+        "sample_date": {"type": "string", "format": "date"},
+        "entered_by": {"enum": ["patient", "doctor", "imported"]},
+        "doctor_verified": {"type": "boolean"},
+        "egfr_source": {"enum": ["lab", "calculated", "not_applicable"]}
+      }
+    },
+    "routingDecision": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "system_recommendation": {"enum": ["none", "review_needed"]},
+        "doctor_decision": {"enum": ["pending", "none", "preferred", "required"]},
+        "patient_visible": {"type": "boolean"},
+        "confirmed_at": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "alert": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule_id", "doctor_priority", "patient_action", "created_at", "status"],
+      "properties": {
+        "id": {"type": "string"},
+        "rule_id": {"type": "string"},
+        "doctor_priority": {"$ref": "#/$defs/doctorPriority"},
+        "patient_action": {"$ref": "#/$defs/patientAction"},
+        "source_fact_ids": {"type": "array", "items": {"type": "string"}},
+        "message_template_id": {"type": ["string", "null"]},
+        "rule_version": {"type": "string"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "delivered_to_workplace_at": {"type": ["string", "null"], "format": "date-time"},
+        "viewed_at": {"type": ["string", "null"], "format": "date-time"},
+        "status": {"enum": ["created", "delivered_to_workplace", "viewed", "acknowledged", "resolved"]}
+      }
+    },
+    "evidenceSpan": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0},
+        "text": {"type": "string"}
+      },
+      "required": ["start", "end", "text"]
+    }
+  }
+}

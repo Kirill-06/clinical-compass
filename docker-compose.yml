@@ -1,0 +1,38 @@
+# Полный стенд: PostgreSQL + API с веб-приложением.
+#   cp .env.example .env && docker compose up --build
+#   → http://localhost:8080
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-clinical_compass}
+      POSTGRES_USER: ${POSTGRES_USER:-clinical_compass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: clinical-compass:0.2.0
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      CC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-clinical_compass}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-clinical_compass}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - files:/data/files
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  files:

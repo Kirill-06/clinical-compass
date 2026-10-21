@@ -1,0 +1,102 @@
+# Подписи значений закрытых справочников v0.2 для интерфейса (врач и пациент).
+# Ключи — wire-значения из patient_state_v0.2.schema.json.
+version: "0.2.0"
+
+symptom_types:
+  somnolence: "Сонливость"
+  headache: "Головная боль"
+  dizziness: "Головокружение"
+  asthenia: "Слабость, быстрая утомляемость"
+  paresthesia: "Покалывание, онемение"
+  insomnia: "Бессонница"
+  poor_sleep_quality: "Плохое качество сна"
+  anxiety_increased: "Тревога усилилась"
+  attention_disturbance: "Трудно сосредоточиться"
+  slowed_reaction: "Замедленная реакция"
+  dysgeusia: "Изменение вкуса"
+  nausea: "Тошнота"
+  upper_abdominal_pain: "Боль в верхней части живота"
+  constipation: "Запор"
+  back_pain: "Боль в спине"
+  muscle_rigidity: "Скованность мышц"
+  trismus: "Трудно открыть рот, сведение челюсти"
+  hyperhidrosis: "Повышенная потливость"
+  other_unlisted: "Другое — опишу сам(а)"
+
+missed_reasons:
+  forgot: "Забыл(а)"
+  adverse_event: "Из-за нежелательного явления"
+  felt_unwell: "Плохо себя чувствовал(а)"
+  ran_out: "Закончился препарат"
+  decided_to_stop: "Решил(а) прекратить приём"
+  other: "Другая причина"
+  unknown: "Не указана"
+
+intake_slots:
+  morning: "Утро"
+  evening: "Вечер"
+
+severity:
+  mild: "Слабо"
+  moderate: "Умеренно"
+  severe: "Сильно"
+  unknown: "Не знаю"
+
+risk_signals:
+  self_harm_or_suicidal: "мысли о смерти / самоповреждении"
+  possible_overdose: "возможная передозировка"
+  possible_allergic_reaction: "возможная аллергическая реакция"
+  pregnancy_or_lactation: "беременность или лактация"
+  concomitant_drug_mention: "упоминание другого препарата"
+  alcohol_use_mention: "упоминание алкоголя"
+  intention_to_stop_treatment: "намерение прекратить лечение"
+  other_concern: "другая жалоба"
+
+lab_analytes:
+  hemoglobin: "Гемоглобин"
+  creatinine: "Креатинин"
+  egfr: "СКФ"
+  cpk: "КФК"
+  alt: "АЛТ"
+  ast: "АСТ"
+  bilirubin_total: "Билирубин общий"
+  bilirubin_direct: "Билирубин прямой"
+  glucose: "Глюкоза"
+  tsh: "ТТГ"
+  t3: "Т3"
+  t4: "Т4"
+  other: "Другой показатель"
+
+sources:
+  form: "форма пациента"
+  text_llm: "извлечено из текста (ИИ)"
+  text_lexicon: "извлечено из текста (словарь-заглушка)"
+  clinician: "внесено врачом"
+  lab: "лаборатория"
+  derived: "вычислено"
+
+confirmations:
+  pending: "ожидает подтверждения"
+  patient_confirmed: "подтверждено пациентом"
+  doctor_verified: "проверено врачом"
+  corrected: "исправлено"
+  rejected: "отклонено"
+
+# Названия правил для интерфейса врача (ключи — id из alert_rules_v0.2.yaml).
+rule_titles:
+  R_SELF_HARM: "Сигнал о мыслях о смерти или самоповреждении"
+  R_OVERDOSE: "Возможная передозировка"
+  R_ALLERGY: "Возможная аллергическая реакция"
+  R_HB_LOW_FEMALE: "Гемоглобин ниже порога (женщины, < 120 г/л)"
+  R_HB_LOW_MALE: "Гемоглобин ниже порога (мужчины, < 130 г/л)"
+  R_EGFR_LOW: "СКФ ниже 60 мл/мин/1,73 м²"
+  R_CPK_HIGH: "КФК выше референса лаборатории"
+  R_GAD_WORSENING: "GAD-7: рост на 4 и более балла"
+  R_PHQ_SCREEN_POSITIVE: "PHQ-9 ≥ 10: положительный скрининг, нужна оценка врача"
+  R_AE_IMPACT: "Нежелательное явление из инструкции, мешает повседневной жизни"
+  R_AE_NO_IMPACT: "Нежелательное явление из инструкции, не мешает повседневной жизни"
+  R_ANXIETY_INCREASED: "Пациент сообщает об усилении тревоги"
+  R_MISSED_ADVERSE_EVENT: "Пропуск приёма из-за нежелательного явления"
+  R_INTENTION_TO_STOP: "Намерение прекратить лечение"
+  R_OUT_OF_SCOPE: "Жалоба вне области инструмента — срочность не определяется"
+  R_ROUTING_REVIEW: "Рекомендуется рассмотреть маршрутизацию к психиатру"
