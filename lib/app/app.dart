@@ -6,6 +6,7 @@ import 'package:clinical_compass/app/app_services.dart';
 import 'package:clinical_compass/app/meta_gate.dart';
 import 'package:clinical_compass/app/router.dart';
 import 'package:clinical_compass/core/design/theme.dart';
+import 'package:clinical_compass/presentation/patient/emergency_alert.dart';
 
 class ClinicalCompassApp extends StatefulWidget {
   const ClinicalCompassApp({super.key, required this.services});
@@ -34,7 +35,14 @@ class _ClinicalCompassAppState extends State<ClinicalCompassApp> {
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         routerConfig: _router,
-        builder: (context, child) => MetaGate(api: widget.services.api, child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => MetaGate(
+          api: widget.services.api,
+          child: EmergencyAlertHost(
+            api: widget.services.api,
+            navigatorKey: _router.routerDelegate.navigatorKey,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
         locale: const Locale('ru', 'RU'),
         supportedLocales: const [Locale('ru', 'RU')],
         localizationsDelegates: const [

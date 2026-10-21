@@ -210,3 +210,29 @@ class BookingStatus(StrEnum):
     CONTACTED = "contacted"
     SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
+
+
+class ExternalSystem(StrEnum):
+    """Внешние медицинские информационные системы, в которых открывается окно сервиса."""
+
+    EMIAS = "emias"
+    ONEC = "onec"
+
+    @property
+    def display_name(self) -> str:
+        return {ExternalSystem.EMIAS: "ЕМИАС", ExternalSystem.ONEC: "1С:Медицина"}[self]
+
+
+class IdentityKind(StrEnum):
+    PATIENT = "patient"
+    DOCTOR = "doctor"
+
+
+class SafetyAction(StrEnum):
+    """Что пациент сделал с экстренным предупреждением (экран «Позвоните 112»)."""
+
+    SHOWN = "shown"
+    CALL_112 = "call_112"
+    CALL_103 = "call_103"
+    MESSAGE_DOCTOR = "message_doctor"
+    DISMISSED = "dismissed"

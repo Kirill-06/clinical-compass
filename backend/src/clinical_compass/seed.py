@@ -14,10 +14,13 @@ from clinical_compass.db.models import (
     AdminRow,
     DoctorPatientLinkRow,
     DoctorRow,
+    ExternalIdentityRow,
     MedicationPlanRow,
     PatientRow,
 )
 from clinical_compass.domain.enums import (
+    ExternalSystem,
+    IdentityKind,
     Instrument,
     IntakeSlot,
     IntakeStatus,
@@ -150,6 +153,7 @@ def seed_demo(deps: Deps) -> None:
         return deps.with_clock(deps.clock.at(moment))
 
     _people(deps, today, at)
+    _external_identities(deps)
     deps.session.flush()
 
     for spec in _PATIENTS:
@@ -236,6 +240,31 @@ def _people(deps: Deps, today: date, at: Callable[[int, int], datetime]) -> None
                 active=True,
             ),
         )
+
+
+def _external_identities(deps: Deps) -> None:
+    """Вымышленные идентификаторы в ЕМИАС и 1С (префикс DEMO — не настоящие номера)."""
+    prefixes = {ExternalSystem.EMIAS: "DEMO-EMIAS", ExternalSystem.ONEC: "DEMO-1C"}
+    for system, prefix in prefixes.items():
+        for doctor_id in ("doc_a", "doc_b"):
+            external = f"{prefix}-DOC-{doctor_id[-1].upper()}"
+            _identity(deps, system, IdentityKind.DOCTOR, external, doctor_id)
+        for spec in _PATIENTS:
+            _identity(deps, system, IdentityKind.PATIENT, f"{prefix}-{spec.display_id[2:]}", spec.id)
+
+
+def _identity(
+    deps: Deps, system: ExternalSystem, kind: IdentityKind, external_id: str, internal_id: str
+) -> None:
+    deps.repos.integrations.add_identity(
+        ExternalIdentityRow(
+            id=f"ext_{system.value}_{kind.value}_{internal_id}",
+            system=system.value,
+            kind=kind.value,
+            external_id=external_id,
+            internal_id=internal_id,
+        )
+    )
 
 
 def _history(

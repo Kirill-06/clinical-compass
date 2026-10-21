@@ -11,11 +11,13 @@ from clinical_compass.api.schemas import (
     LabRequest,
     MessageRequest,
     QuestionnaireRequest,
+    SafetyActionRequest,
     SymptomRequest,
 )
 from clinical_compass.services.doctors import DoctorService
 from clinical_compass.services.errors import InvalidInputError
 from clinical_compass.services.patients import PatientService, SymptomReport, Upload
+from clinical_compass.services.safety import SafetyService
 
 router = APIRouter(prefix="/patients/{patient_id}", tags=["patient"])
 
@@ -111,3 +113,9 @@ def download_attachment(
 @router.post("/labs", status_code=status.HTTP_201_CREATED)
 def add_lab(patient_id: str, body: LabRequest, deps: DepsDep, principal: PrincipalDep) -> Json:
     return PatientService(deps).add_lab(principal, patient_id, body.to_body())
+
+
+@router.post("/safety-actions", status_code=status.HTTP_201_CREATED)
+def safety_action(patient_id: str, body: SafetyActionRequest, deps: DepsDep, principal: PrincipalDep) -> Json:
+    """Действие пациента с экстренным предупреждением: показано, звонок 112/103, закрыто."""
+    return SafetyService(deps).record(principal, patient_id, body.alert_id, body.action)

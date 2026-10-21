@@ -446,3 +446,14 @@ def test_settings_refuse_dev_internal_token_outside_demo() -> None:
         Settings(demo_auth=False, internal_token="a-real-secret-token").internal_token
         == "a-real-secret-token"
     )
+
+
+def test_questionnaire_is_due_from_the_start_of_the_due_day() -> None:
+    schedule = QuestionnaireSchedule(
+        instrument=Instrument.GAD7, interval_days=14, configured_by="system_default", active=True
+    )
+    filled = T0.replace(hour=12)
+    responses = [q("a", Instrument.GAD7, 8, day=0).model_copy(update={"administered_at": filled})]
+    early_on_due_day = filled + timedelta(days=13, hours=13)  # 14-й день, 01:00 UTC
+    assert schedule_status(schedule, responses, T0, early_on_due_day).status is DueStatus.DUE
+    assert schedule_status(schedule, responses, T0, filled + timedelta(days=13)).status is DueStatus.UPCOMING

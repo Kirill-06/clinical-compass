@@ -132,6 +132,14 @@ class AuditRepository:
         )
         return list(self._s.scalars(stmt))
 
+    def for_entity(self, entity: str, entity_id: str) -> list[AuditEventRow]:
+        stmt = (
+            select(AuditEventRow)
+            .where(AuditEventRow.entity == entity, AuditEventRow.entity_id == entity_id)
+            .order_by(AuditEventRow.at.desc(), AuditEventRow.id.desc())
+        )
+        return list(self._s.scalars(stmt))
+
     def last_at(self, entity: str, entity_id: str) -> datetime | None:
         stmt = (
             select(AuditEventRow.at)

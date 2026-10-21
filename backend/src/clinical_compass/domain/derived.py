@@ -56,14 +56,22 @@ def schedule_status(
     responses: Iterable[QuestionnaireResponse],
     observation_start: datetime,
     now: datetime,
+    *,
+    utc_offset_hours: int = 0,
 ) -> ScheduleStatus:
-    """Следующий срок = последнее завершённое заполнение + интервал; без заполнений — начало наблюдения."""
+    """Следующий срок = последнее завершённое заполнение + интервал; без заполнений — начало наблюдения.
+
+    Срок считается по календарным дням клиники: опрос «пора заполнить» с утра
+    дня срока, а не с той минуты, когда был заполнен прошлый раз.
+    """
     done = _completed(responses, schedule.instrument)
     last = done[-1].administered_at if done else None
     next_due = last + timedelta(days=schedule.interval_days) if last else observation_start
-    if now < next_due:
+    offset = timedelta(hours=utc_offset_hours)
+    days_past_due = ((now + offset).date() - (next_due + offset).date()).days
+    if days_past_due < 0:
         status = DueStatus.UPCOMING
-    elif (now - next_due).days >= OVERDUE_AFTER_DAYS:
+    elif days_past_due >= OVERDUE_AFTER_DAYS:
         status = DueStatus.OVERDUE
     else:
         status = DueStatus.DUE

@@ -40,7 +40,8 @@ src/clinical_compass/
   db/             модели SQLAlchemy, сессии, миграции Alembic (db/alembic/versions)
   repositories/   запросы к БД, преобразование строк ↔ доменные объекты
   services/       сценарии: доступ (access.py), Patient State и правила (state.py),
-                  пациент, врач, администратор, внутренний AI-слой, вход; presenter.py — формат ответов
+                  пациент, врач, администратор, внутренний AI-слой, вход; presenter.py — формат ответов;
+                  integrations.py + fhir.py — окно в ЕМИАС / 1С и FHIR-сводка; safety.py — экстренный экран
   api/            роутеры FastAPI, схемы запросов, обработчики ошибок, зависимости (сессия, пользователь)
   main.py         фабрика приложения create_app()
   seed.py         демо-данные — создаются теми же сервисами «в прошлом»
