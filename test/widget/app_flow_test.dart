@@ -111,7 +111,8 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Последние дни не хочу жить');
     await tapText(tester, 'Отправить врачу');
     expect(find.text('Нужна срочная помощь?'), findsOneWidget);
-    expect(find.text('Позвонить 112'), findsOneWidget);
+    // Кнопка есть и на выезжающем экране, и в карточке уведомления под ним.
+    expect(find.text('Позвонить 112'), findsNWidgets(2));
     expect(find.text('Скорая помощь — 103'), findsOneWidget);
     await tapText(tester, 'Я в безопасности, закрыть');
     expect(find.text('Нужна срочная помощь?'), findsNothing);
