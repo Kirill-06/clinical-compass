@@ -1,0 +1,238 @@
+schema_version: "0.2.0"
+rule_version: "0.2.0"
+status: frozen_working_baseline
+notes:
+  - doctor_priority controls workplace queue ordering and visibility, not interruption.
+  - patient_action is independent from doctor_priority.
+  - the system never calls an ambulance; recommend_ambulance is patient-facing guidance only.
+  - final therapy decisions and confirmed routing remain with the doctor.
+  - out-of-scope complaints are not assigned medical urgency by the tool.
+
+priority_order: [urgent, high, normal, info]
+
+rules:
+  - id: R_SELF_HARM
+    when:
+      any:
+        - field: questionnaire.phq9_item9
+          op: gte
+          value: 1
+        - field: risk_signal.type
+          op: eq
+          value: self_harm_or_suicidal
+    doctor_priority: urgent
+    patient_action: recommend_ambulance
+    message_template_id: self_harm_safety_v1
+    source: team_medical_logic
+    requires_doctor_confirmation_for_therapy: true
+
+  - id: R_OVERDOSE
+    when:
+      field: risk_signal.type
+      op: eq
+      value: possible_overdose
+    doctor_priority: urgent
+    patient_action: recommend_ambulance
+    message_template_id: overdose_safety_v1
+    source: aviandr_leaflet
+
+  - id: R_ALLERGY
+    when:
+      field: risk_signal.type
+      op: eq
+      value: possible_allergic_reaction
+    doctor_priority: urgent
+    patient_action: recommend_ambulance
+    message_template_id: allergy_safety_v1
+    source: team_medical_logic_plus_leaflet_contraindication
+
+  - id: R_HB_LOW_FEMALE
+    when:
+      all:
+        - field: patient.sex
+          op: eq
+          value: female
+        - field: lab.hemoglobin_g_l
+          op: lt
+          value: 120
+    doctor_priority: urgent
+    patient_action: contact_clinic_today
+    message_template_id: lab_contact_today_v1
+    source: who_threshold_plus_leaflet_monitoring
+
+  - id: R_HB_LOW_MALE
+    when:
+      all:
+        - field: patient.sex
+          op: eq
+          value: male
+        - field: lab.hemoglobin_g_l
+          op: lt
+          value: 130
+    doctor_priority: urgent
+    patient_action: contact_clinic_today
+    message_template_id: lab_contact_today_v1
+    source: who_threshold_plus_leaflet_monitoring
+
+  - id: R_EGFR_LOW
+    when:
+      field: lab.egfr_ml_min_1_73m2
+      op: lt
+      value: 60
+    doctor_priority: urgent
+    patient_action: contact_clinic_today
+    message_template_id: lab_contact_today_v1
+    source: aviandr_leaflet
+
+  - id: R_CPK_HIGH
+    when:
+      field: lab.cpk
+      op: gt_reference_high
+    doctor_priority: info
+    patient_action: none
+    message_template_id: null
+    source: aviandr_leaflet_lab_reference
+
+  - id: R_GAD_WORSENING
+    when:
+      field: questionnaire.GAD7.delta_from_previous
+      op: gte
+      value: 4
+    doctor_priority: normal
+    patient_action: inform_at_next_contact
+    message_template_id: gad_worsening_v1
+    source: literature_minimal_important_difference
+
+  - id: R_PHQ_SCREEN_POSITIVE
+    when:
+      field: questionnaire.PHQ9.total_score
+      op: gte
+      value: 10
+    doctor_priority: high
+    patient_action: contact_doctor_soon
+    message_template_id: phq_positive_screen_v1
+    source: phq9_validation_and_meta_analysis
+
+  - id: R_AE_IMPACT
+    when:
+      all:
+        - field: symptom.normalized_type
+          op: in_closed_leaflet_symptom_set
+        - field: symptom.polarity
+          op: eq
+          value: present
+        - field: symptom.experiencer
+          op: eq
+          value: patient
+        - field: symptom.affects_daily_life
+          op: eq
+          value: yes
+    doctor_priority: normal
+    patient_action: contact_doctor_soon
+    message_template_id: ae_contact_doctor_v1
+    source: aviandr_leaflet_plus_team_logic
+
+  - id: R_AE_NO_IMPACT
+    when:
+      all:
+        - field: symptom.normalized_type
+          op: in_closed_leaflet_symptom_set
+        - field: symptom.polarity
+          op: eq
+          value: present
+        - field: symptom.experiencer
+          op: eq
+          value: patient
+        - field: symptom.affects_daily_life
+          op: eq
+          value: no
+    doctor_priority: info
+    patient_action: inform_at_next_contact
+    message_template_id: ae_info_v1
+    source: aviandr_leaflet_plus_team_logic
+
+  - id: R_ANXIETY_INCREASED
+    when:
+      all:
+        - field: symptom.normalized_type
+          op: eq
+          value: anxiety_increased
+        - field: symptom.polarity
+          op: eq
+          value: present
+    doctor_priority: normal
+    patient_action: contact_doctor_soon
+    message_template_id: anxiety_increased_v1
+    source: aviandr_leaflet
+
+  - id: R_MISSED_ADVERSE_EVENT
+    when:
+      field: medication_intake.missed_reason
+      op: eq
+      value: adverse_event
+    doctor_priority: normal
+    patient_action: contact_doctor_soon
+    message_template_id: missed_due_ae_v1
+    source: team_medical_logic
+
+  - id: R_INTENTION_TO_STOP
+    when:
+      any:
+        - field: medication_intake.missed_reason
+          op: eq
+          value: decided_to_stop
+        - field: risk_signal.type
+          op: eq
+          value: intention_to_stop_treatment
+    doctor_priority: high
+    patient_action: contact_doctor_soon
+    message_template_id: intention_stop_v1
+    source: team_medical_logic
+
+  - id: R_OUT_OF_SCOPE
+    when:
+      any:
+        - field: symptom.normalized_type
+          op: eq
+          value: other_unlisted
+        - field: risk_signal.type
+          op: eq
+          value: other_concern
+    doctor_priority: high
+    patient_action: neutral_out_of_leaflet
+    message_template_id: out_of_scope_v1
+    source: team_scope_policy
+    medical_urgency_classified: false
+
+  - id: R_ROUTING_REVIEW
+    when:
+      field: clinical_profile.route_review_needed
+      op: eq
+      value: true
+    doctor_priority: high
+    patient_action: none
+    message_template_id: null
+    source: clinical_guideline_and_team_logic
+    doctor_decides_route: [none, preferred, required]
+    patient_sees_only_after_doctor_confirmation: true
+
+special_handling:
+  abdominal_pain:
+    vague_text: ask_localization
+    explicit_upper_abdominal_pain:
+      normalized_type: upper_abdominal_pain
+      automatic_urgent: false
+      apply_standard_adverse_event_rules: true
+    unmapped_or_other_location:
+      normalized_type: other_unlisted
+      apply_rule: R_OUT_OF_SCOPE
+
+  workplace_alerts:
+    personal_push_default: false
+    deliver_immediately_to_workplace: true
+    urgent_pinned_until_acknowledged: true
+
+  questionnaire_schedule:
+    GAD7_default_days: 14
+    PHQ9_default_days: 14
+    doctor_configurable: true

@@ -1,0 +1,15 @@
+**/.git
+**/.dart_tool
+**/build
+**/.venv
+**/__pycache__
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+backend/data
+.env
+android
+ios
+test
+backend/tests
+docs

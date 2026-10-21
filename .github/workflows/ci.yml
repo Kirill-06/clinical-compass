@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: cc
+          POSTGRES_USER: cc
+          POSTGRES_PASSWORD: cc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cc" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy src tests
+      - run: uv run pytest
+      - name: Migrations and demo seed on PostgreSQL
+        env:
+          CC_DATABASE_URL: postgresql+psycopg://cc:cc@localhost:5432/cc
+        run: |
+          uv run clinical-compass check-contracts
+          uv run clinical-compass seed
+
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - run: cd backend && uv sync --frozen
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [backend, flutter]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t clinical-compass:ci .
