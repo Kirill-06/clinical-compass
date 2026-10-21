@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import 'package:clinical_compass/app/app_services.dart';
 
 import 'package:clinical_compass/core/design/components.dart';
 import 'package:clinical_compass/core/design/tokens.dart';
 import 'package:clinical_compass/core/design/typography.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/domain/json.dart';
+import 'package:clinical_compass/presentation/patient/emergency_alert.dart';
 
 /// Тексты для пациента по `patient_action` — только из реестра шаблонов.
 class NoticeList extends StatelessWidget {
@@ -50,6 +55,7 @@ class NoticeCard extends StatelessWidget {
       _ => Icons.info_outline,
     };
     final draft = template != null && template['status'] != 'approved';
+    final patient = context.services.api.user;
     return Semantics(
       liveRegion: true,
       child: InlineNotice(
@@ -57,10 +63,23 @@ class NoticeCard extends StatelessWidget {
         icon: icon,
         title: template?['title'] as String? ?? 'Сообщение передано врачу',
         body: template?['body'] as String? ?? 'Ваш врач увидит эту информацию.',
-        action: draft
-            ? const Row(
+        action: draft || action == PatientAction.recommendAmbulance
+            ? Wrap(
+                spacing: Space.x3,
+                runSpacing: Space.x2,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  DemoTag(label: 'ЧЕРНОВИК ТЕКСТА', tooltip: 'Текст ожидает утверждения медицинским экспертом'),
+                  if (action == PatientAction.recommendAmbulance && patient != null)
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.dangerFg),
+                      onPressed: () => unawaited(
+                        showEmergencyAlert(context, api: context.api, patientId: patient.id, notice: notice),
+                      ),
+                      icon: const Icon(Icons.call, size: 18),
+                      label: const Text('Позвонить 112'),
+                    ),
+                  if (draft)
+                    const DemoTag(label: 'ЧЕРНОВИК ТЕКСТА', tooltip: 'Текст ожидает утверждения медицинским экспертом'),
                 ],
               )
             : null,

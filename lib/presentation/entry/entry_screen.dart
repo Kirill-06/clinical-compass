@@ -19,6 +19,7 @@ class EntryScreen extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final narrow = width < Breakpoints.compact;
     final twoColumns = width >= 1024;
+    const header = _Header();
     const about = _About();
     final accounts = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,17 +49,30 @@ class EntryScreen extends StatelessWidget {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(flex: 5, child: about),
+                      const Expanded(
+                        flex: 5,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            header,
+                            SizedBox(height: Space.x6),
+                            about,
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: Space.x8),
                       Expanded(flex: 6, child: accounts),
                     ],
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // На телефоне сначала вход, описание сервиса — ниже.
                     children: [
-                      about,
+                      header,
                       const SizedBox(height: Space.x6),
                       accounts,
+                      const SizedBox(height: Space.x8),
+                      about,
                     ],
                   ),
           ),
@@ -68,57 +82,62 @@ class EntryScreen extends StatelessWidget {
   }
 }
 
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const BrandMark(size: 40),
+      const SizedBox(width: Space.x3),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Semantics(header: true, child: const Text('Клинический компас', style: AppType.pageTitle)),
+            const Text('Сопровождение пациента между визитами · v0.2', style: AppType.bodySecondary),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
 class _About extends StatelessWidget {
   const _About();
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Row(
-        children: [
-          const BrandMark(size: 40),
-          const SizedBox(width: Space.x3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(header: true, child: const Text('Клинический компас', style: AppType.pageTitle)),
-                const Text('Сопровождение пациента между визитами · v0.2', style: AppType.bodySecondary),
-              ],
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: Space.x6),
-      const Text(
+      Text(
         'Пациент отмечает опросники, приём препарата и самочувствие. Правила v0.2 превращают данные '
         'в события с приоритетом, и врач видит их в рабочей очереди — без диагнозов от системы.',
         style: AppType.body,
       ),
-      const SizedBox(height: Space.x5),
-      const _Step(
+      SizedBox(height: Space.x5),
+      _Step(
         icon: Icons.phone_iphone,
         title: 'Пациент',
         body: 'GAD-7 и PHQ-9 раз в 14 дней, отметки приёма утром и вечером, жалобы и файлы.',
       ),
-      const _Step(
+      _Step(
         icon: Icons.rule,
         title: 'Правила',
         body: 'Конфигурация alert_rules v0.2: приоритет для врача и текст пациенту — разные поля.',
       ),
-      const _Step(
+      _Step(
         icon: Icons.inbox_outlined,
         title: 'Врач',
         body: 'Очередь событий: срочные закреплены сверху, у каждого — «Почему?» с правилом и фактами.',
       ),
-      const _Step(
+      _Step(
         icon: Icons.emergency_outlined,
         title: 'Срочные случаи',
         body: 'Пациент сразу видит экран с кнопкой «Позвонить 112»; врач — что пациент нажал.',
       ),
-      const SizedBox(height: Space.x4),
-      const _MisCard(),
+      SizedBox(height: Space.x4),
+      _MisCard(),
     ],
   );
 }
