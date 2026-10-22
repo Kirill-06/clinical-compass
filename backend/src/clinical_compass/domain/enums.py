@@ -69,6 +69,7 @@ class CompletionStatus(StrEnum):
 class IntakeSlot(StrEnum):
     MORNING = "morning"
     EVENING = "evening"
+    UNKNOWN = "unknown"
 
 
 class IntakeStatus(StrEnum):
