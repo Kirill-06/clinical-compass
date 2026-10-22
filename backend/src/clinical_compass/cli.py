@@ -2,7 +2,9 @@
 
 import argparse
 import logging
+import json
 import sys
+from pathlib import Path
 
 import uvicorn
 
@@ -10,6 +12,7 @@ from clinical_compass.api.runtime import Runtime
 from clinical_compass.config import get_settings
 from clinical_compass.db.migrations import upgrade_to_head
 from clinical_compass.domain.contracts import ContractError, load_contracts
+from clinical_compass.evaluation import evaluate_extractor, write_eval_outputs
 from clinical_compass.domain.rules import RuleConfigError
 from clinical_compass.seed import seed_if_empty
 
@@ -25,6 +28,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("migrate", help="применить миграции БД")
     sub.add_parser("seed", help="загрузить демо-данные в пустую БД")
     sub.add_parser("check-contracts", help="проверить согласованность contracts/")
+    evaluate = sub.add_parser("evaluate-extractor", help="прогнать текущий Extractor по gold JSONL")
+    evaluate.add_argument("dataset", type=Path)
+    evaluate.add_argument("--out-dir", type=Path, default=Path("evaluation/out"))
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     settings = get_settings()
@@ -43,6 +49,16 @@ def main(argv: list[str] | None = None) -> int:
             loaded = seed_if_empty(runtime.deps(session))
             session.commit()
         logger.info("Демо-данные загружены" if loaded else "База не пуста — демо-данные не загружались")
+        return 0
+    if args.command == "evaluate-extractor":
+        runtime = Runtime.build(settings)
+        result = evaluate_extractor(runtime.extractor, args.dataset)
+        write_eval_outputs(
+            result,
+            metrics_path=args.out_dir / "metrics.json",
+            predictions_path=args.out_dir / "predictions.jsonl",
+        )
+        print(json.dumps(result.metrics, ensure_ascii=False, indent=2))
         return 0
     try:
         contracts = load_contracts(settings.contracts_dir)

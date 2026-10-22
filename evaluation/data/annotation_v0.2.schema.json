@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clinical-compass.local/schemas/annotation_v0.2.schema.json",
+  "title": "Clinical Compass Annotation v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "message_id",
+    "text",
+    "gold_entities",
+    "unknown_fields"
+  ],
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "pattern": "^(gen|real)_\\d{3}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gold_entities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/annotationEntity"
+      }
+    },
+    "unknown_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "evidenceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "annotationEntity": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/symptomAnnotation"
+        },
+        {
+          "$ref": "#/$defs/medicationAnnotation"
+        },
+        {
+          "$ref": "#/$defs/riskAnnotation"
+        },
+        {
+          "$ref": "#/$defs/labAnnotation"
+        }
+      ]
+    },
+    "symptomAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entity_type",
+        "normalized_type",
+        "evidence_span",
+        "polarity",
+        "experiencer",
+        "temporality"
+      ],
+      "properties": {
+        "entity_type": {
+          "const": "symptom"
+        },
+        "normalized_type": {
+          "enum": [
+            "somnolence",
+            "headache",
+            "dizziness",
+            "asthenia",
+            "paresthesia",
+            "insomnia",
+            "poor_sleep_quality",
+            "anxiety_increased",
+            "attention_disturbance",
+            "slowed_reaction",
+            "dysgeusia",
+            "nausea",
+            "upper_abdominal_pain",
+            "constipation",
+            "back_pain",
+            "muscle_rigidity",
+            "trismus",
+            "hyperhidrosis",
+            "other_unlisted"
+          ]
+        },
+        "evidence_span": {
+          "$ref": "#/$defs/evidenceSpan"
+        },
+        "polarity": {
+          "enum": [
+            "present",
+            "absent",
+            "uncertain"
+          ]
+        },
+        "experiencer": {
+          "enum": [
+            "patient",
+            "other"
+          ]
+        },
+        "temporality": {
+          "enum": [
+            "current",
+            "recent_past",
+            "earlier",
+            "hypothetical"
+          ]
+        },
+        "onset_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "affects_daily_life": {
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "mild",
+            "moderate",
+            "severe",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "medicationAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entity_type",
+        "status",
+        "slot",
+        "evidence_span"
+      ],
+      "properties": {
+        "entity_type": {
+          "const": "medication"
+        },
+        "status": {
+          "enum": [
+            "taken",
+            "missed",
+            "unknown"
+          ]
+        },
+        "slot": {
+          "enum": [
+            "morning",
+            "evening",
+            "unknown"
+          ]
+        },
+        "missed_reason": {
+          "enum": [
+            "forgot",
+            "adverse_event",
+            "felt_unwell",
+            "ran_out",
+            "decided_to_stop",
+            "other",
+            "unknown"
+          ]
+        },
+        "drug": {
+          "type": "string"
+        },
+        "dose_mg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "evidence_span": {
+          "$ref": "#/$defs/evidenceSpan"
+        }
+      }
+    },
+    "riskAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entity_type",
+        "type",
+        "evidence_span"
+      ],
+      "properties": {
+        "entity_type": {
+          "const": "risk_signal"
+        },
+        "type": {
+          "enum": [
+            "self_harm_or_suicidal",
+            "possible_overdose",
+            "possible_allergic_reaction",
+            "pregnancy_or_lactation",
+            "concomitant_drug_mention",
+            "alcohol_use_mention",
+            "intention_to_stop_treatment",
+            "other_concern"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ]
+        },
+        "evidence_span": {
+          "$ref": "#/$defs/evidenceSpan"
+        }
+      }
+    },
+    "labAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entity_type",
+        "analyte",
+        "value",
+        "unit",
+        "evidence_span"
+      ],
+      "properties": {
+        "entity_type": {
+          "const": "lab_mention"
+        },
+        "analyte": {
+          "enum": [
+            "hemoglobin",
+            "creatinine",
+            "egfr",
+            "cpk",
+            "alt",
+            "ast",
+            "bilirubin_total",
+            "bilirubin_direct",
+            "glucose",
+            "tsh",
+            "t3",
+            "t4",
+            "other"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "evidence_span": {
+          "$ref": "#/$defs/evidenceSpan"
+        }
+      }
+    }
+  }
+}
