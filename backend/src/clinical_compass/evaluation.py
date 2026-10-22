@@ -10,7 +10,7 @@ import json
 import math
 import statistics
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -138,13 +138,43 @@ def _count_exact_spans(gold_entities: list[Json], pred_entities: list[Json]) -> 
     return exact_span_hits, matched_for_span
 
 
+def _semantic_metrics(rows: list[Json], predictions: list[Json]) -> Json:
+    """Match semantic labels within each message before aggregating counts."""
+    if len(rows) != len(predictions):
+        raise ValueError("Gold and prediction row counts differ")
+    totals: Counter[str] = Counter()
+    per_type_counts: Counter[tuple[str, str]] = Counter()
+    gold_count = 0
+    pred_count = 0
+    for row, prediction in zip(rows, predictions, strict=True):
+        if row["message_id"] != prediction["message_id"] or row["text"] != prediction["text"]:
+            raise ValueError(f"Gold and prediction rows differ at {row['message_id']}")
+        gold = Counter(_primary_label(_gold_to_flat(e)) for e in row.get("gold_entities", []))
+        pred = Counter(_primary_label(e) for e in prediction["predicted_entities"])
+        gold_count += sum(gold.values())
+        pred_count += sum(pred.values())
+        row_tp, row_fp, row_fn = _counter_metrics(gold, pred)
+        totals.update({"tp": row_tp, "fp": row_fp, "fn": row_fn})
+        for outcome, matches in (("tp", gold & pred), ("fp", pred - gold), ("fn", gold - pred)):
+            for label, count in matches.items():
+                per_type_counts[str(label[0]), outcome] += count
+    kinds = sorted(kind for kind, _ in per_type_counts)
+    per_type = {
+        kind: _prf(*(per_type_counts[kind, outcome] for outcome in ("tp", "fp", "fn")))
+        for kind in dict.fromkeys(kinds)
+    }
+    return {
+        "dataset": {"messages": len(rows), "gold_entities": gold_count},
+        "overall": _prf(totals["tp"], totals["fp"], totals["fn"]),
+        "per_entity_type": per_type,
+        "risk_recall": per_type.get("risk_signal", _prf(0, 0, 0))["recall"],
+        "hallucination_rate": round(totals["fp"] / pred_count, 6) if pred_count else 0.0,
+    }
+
+
 def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
     rows = _read_rows(dataset_path)
 
-    overall_gold: Counter[tuple[Any, ...]] = Counter()
-    overall_pred: Counter[tuple[Any, ...]] = Counter()
-    per_type_gold: dict[str, Counter[tuple[Any, ...]]] = defaultdict(Counter)
-    per_type_pred: dict[str, Counter[tuple[Any, ...]]] = defaultdict(Counter)
     latencies_ms: list[float] = []
     predictions: list[Json] = []
     valid = 0
@@ -196,37 +226,13 @@ def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
                 }
             )
 
-        g_counter = Counter(_primary_label(e) for e in gold_entities)
-        p_counter = Counter(_primary_label(e) for e in pred_entities)
-        overall_gold.update(g_counter)
-        overall_pred.update(p_counter)
-        for entity in gold_entities:
-            per_type_gold[str(entity.get("entity_type"))][_primary_label(entity)] += 1
-        for entity in pred_entities:
-            per_type_pred[str(entity.get("entity_type"))][_primary_label(entity)] += 1
-
         # Evidence-span accuracy only among entities whose semantic label can be paired exactly.
         row_exact_hits, row_matched = _count_exact_spans(gold_entities, pred_entities)
         exact_span_hits += row_exact_hits
         matched_for_span += row_matched
 
-    tp, fp, fn = _counter_metrics(overall_gold, overall_pred)
-    per_type: Json = {}
-    for kind in sorted(set(per_type_gold) | set(per_type_pred)):
-        ktp, kfp, kfn = _counter_metrics(per_type_gold[kind], per_type_pred[kind])
-        per_type[kind] = _prf(ktp, kfp, kfn)
-
-    risk = per_type.get("risk_signal", _prf(0, 0, 0))
-    hallucination_rate = fp / sum(overall_pred.values()) if overall_pred else 0.0
     metrics: Json = {
-        "dataset": {
-            "messages": len(rows),
-            "gold_entities": sum(overall_gold.values()),
-        },
-        "overall": _prf(tp, fp, fn),
-        "per_entity_type": per_type,
-        "risk_recall": risk["recall"],
-        "hallucination_rate": round(hallucination_rate, 6),
+        **_semantic_metrics(rows, predictions),
         "schema_pass_rate": round(valid / len(rows), 6) if rows else 1.0,
         "failed_messages": failures,
         "evidence_span_exact_match": (
@@ -239,6 +245,16 @@ def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
         },
     }
     return EvalResult(metrics=metrics, predictions=predictions)
+
+
+def rescore_saved_predictions(
+    dataset_path: Path, predictions_path: Path, original_metrics_path: Path
+) -> Json:
+    """Correct semantic counts from saved predictions; retain unrounded runtime metrics."""
+    rows = _read_rows(dataset_path)
+    predictions = _read_rows(predictions_path)
+    original = json.loads(original_metrics_path.read_text(encoding="utf-8"))
+    return {**original, **_semantic_metrics(rows, predictions)}
 
 
 def write_eval_outputs(result: EvalResult, *, metrics_path: Path, predictions_path: Path) -> None:
