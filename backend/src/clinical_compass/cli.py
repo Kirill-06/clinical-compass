@@ -1,8 +1,8 @@
 """Командная строка: `clinical-compass serve | migrate | seed | check-contracts`."""
 
 import argparse
-import logging
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -12,8 +12,8 @@ from clinical_compass.api.runtime import Runtime
 from clinical_compass.config import get_settings
 from clinical_compass.db.migrations import upgrade_to_head
 from clinical_compass.domain.contracts import ContractError, load_contracts
-from clinical_compass.evaluation import evaluate_extractor, write_eval_outputs
 from clinical_compass.domain.rules import RuleConfigError
+from clinical_compass.evaluation import evaluate_extractor, write_eval_outputs
 from clinical_compass.seed import seed_if_empty
 
 logger = logging.getLogger("clinical_compass")

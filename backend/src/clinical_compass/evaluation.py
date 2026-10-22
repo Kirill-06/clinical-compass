@@ -112,12 +112,34 @@ def _span_key(entity: Json) -> tuple[Any, ...] | None:
     return (span.get("start"), span.get("end"), span.get("text"))
 
 
-def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
+def _read_rows(dataset_path: Path) -> list[Json]:
     rows: list[Json] = []
     with dataset_path.open(encoding="utf-8") as handle:
         for line in handle:
             if line.strip():
                 rows.append(json.loads(line))
+    return rows
+
+
+def _count_exact_spans(gold_entities: list[Json], pred_entities: list[Json]) -> tuple[int, int]:
+    """Pair matching semantic labels once each, then compare their evidence spans."""
+    exact_span_hits = 0
+    matched_for_span = 0
+    remaining = list(pred_entities)
+    for gold in gold_entities:
+        key = _primary_label(gold)
+        match_index = next((i for i, pred in enumerate(remaining) if _primary_label(pred) == key), None)
+        if match_index is None:
+            continue
+        pred = remaining.pop(match_index)
+        matched_for_span += 1
+        if _span_key(gold) == _span_key(pred):
+            exact_span_hits += 1
+    return exact_span_hits, matched_for_span
+
+
+def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
+    rows = _read_rows(dataset_path)
 
     overall_gold: Counter[tuple[Any, ...]] = Counter()
     overall_pred: Counter[tuple[Any, ...]] = Counter()
@@ -184,16 +206,9 @@ def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
             per_type_pred[str(entity.get("entity_type"))][_primary_label(entity)] += 1
 
         # Evidence-span accuracy only among entities whose semantic label can be paired exactly.
-        remaining = list(pred_entities)
-        for gold in gold_entities:
-            key = _primary_label(gold)
-            match_index = next((i for i, pred in enumerate(remaining) if _primary_label(pred) == key), None)
-            if match_index is None:
-                continue
-            pred = remaining.pop(match_index)
-            matched_for_span += 1
-            if _span_key(gold) == _span_key(pred):
-                exact_span_hits += 1
+        row_exact_hits, row_matched = _count_exact_spans(gold_entities, pred_entities)
+        exact_span_hits += row_exact_hits
+        matched_for_span += row_matched
 
     tp, fp, fn = _counter_metrics(overall_gold, overall_pred)
     per_type: Json = {}
@@ -214,7 +229,9 @@ def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
         "hallucination_rate": round(hallucination_rate, 6),
         "schema_pass_rate": round(valid / len(rows), 6) if rows else 1.0,
         "failed_messages": failures,
-        "evidence_span_exact_match": round(exact_span_hits / matched_for_span, 6) if matched_for_span else None,
+        "evidence_span_exact_match": (
+            round(exact_span_hits / matched_for_span, 6) if matched_for_span else None
+        ),
         "latency_ms": {
             "mean": round(statistics.fmean(latencies_ms), 3) if latencies_ms else None,
             "p50": round(_percentile(latencies_ms, 0.50) or 0.0, 3) if latencies_ms else None,
