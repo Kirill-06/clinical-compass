@@ -60,3 +60,6 @@ backend/data/
 
 # Local evaluation outputs
 evaluation/out/
+
+# Local evaluation runs
+evaluation/out_gigachat_*/

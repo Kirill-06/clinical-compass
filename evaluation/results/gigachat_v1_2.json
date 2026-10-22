@@ -1,0 +1,58 @@
+{
+  "dataset": {
+    "messages": 155,
+    "gold_entities": 172
+  },
+  "overall": {
+    "tp": 137,
+    "fp": 80,
+    "fn": 35,
+    "precision": 0.631336,
+    "recall": 0.796512,
+    "f1": 0.70437
+  },
+  "per_entity_type": {
+    "lab_mention": {
+      "tp": 4,
+      "fp": 1,
+      "fn": 1,
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8
+    },
+    "medication": {
+      "tp": 27,
+      "fp": 27,
+      "fn": 4,
+      "precision": 0.5,
+      "recall": 0.870968,
+      "f1": 0.635294
+    },
+    "risk_signal": {
+      "tp": 16,
+      "fp": 3,
+      "fn": 3,
+      "precision": 0.842105,
+      "recall": 0.842105,
+      "f1": 0.842105
+    },
+    "symptom": {
+      "tp": 90,
+      "fp": 49,
+      "fn": 27,
+      "precision": 0.647482,
+      "recall": 0.769231,
+      "f1": 0.703125
+    }
+  },
+  "risk_recall": 0.842105,
+  "hallucination_rate": 0.368664,
+  "schema_pass_rate": 1.0,
+  "failed_messages": 0,
+  "evidence_span_exact_match": 0.635036,
+  "latency_ms": {
+    "mean": 2070.522,
+    "p50": 1843.82,
+    "p95": 3199.661
+  }
+}
