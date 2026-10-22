@@ -3,7 +3,7 @@
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 10 * 1024 * 1024
     max_files_per_message: int = 5
 
+    extractor_mode: Literal["mock", "remote"] = "mock"
+    """Источник NLP: встроенная безопасная заглушка или внешний AI extraction service."""
+
+    extractor_url: str | None = None
+    """HTTP endpoint, возвращающий FreeTextExtraction v0.2 при extractor_mode=remote."""
+
+    extractor_token: str | None = None
+    extractor_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
+
     fixed_now: datetime | None = None
     """Только для тестов: фиксированное «сейчас»."""
 
@@ -60,6 +69,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CC_INTERNAL_TOKEN должен быть задан, когда демо-режим выключен (CC_DEMO_AUTH=false)"
             )
+        if self.extractor_mode == "remote" and not self.extractor_url:
+            raise ValueError("CC_EXTRACTOR_URL обязателен при CC_EXTRACTOR_MODE=remote")
         return self
 
 

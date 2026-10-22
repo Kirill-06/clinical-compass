@@ -57,3 +57,6 @@ backend/data/
 
 # Local tool configuration
 .claude/
+
+# Local evaluation outputs
+evaluation/out/

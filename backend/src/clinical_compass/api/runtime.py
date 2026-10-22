@@ -10,6 +10,7 @@ from clinical_compass.config import Settings
 from clinical_compass.db.session import make_engine, make_session_factory
 from clinical_compass.domain.contracts import Contracts, load_contracts
 from clinical_compass.domain.extraction import Extractor, MockLexiconExtractor
+from clinical_compass.domain.remote_extraction import RemoteHTTPExtractor
 from clinical_compass.services.context import (
     BlobStorage,
     ClinicClock,
@@ -45,13 +46,24 @@ class Runtime:
             settings.clinic_utc_offset_hours,
             (lambda: fixed.astimezone(UTC)) if fixed else None,
         )
+        configured_extractor = extractor
+        if configured_extractor is None:
+            if settings.extractor_mode == "remote":
+                assert settings.extractor_url is not None
+                configured_extractor = RemoteHTTPExtractor(
+                    url=settings.extractor_url,
+                    token=settings.extractor_token,
+                    timeout_seconds=settings.extractor_timeout_seconds,
+                )
+            else:
+                configured_extractor = MockLexiconExtractor()
         return cls(
             settings=settings,
             contracts=load_contracts(settings.contracts_dir),
             engine=engine,
             session_factory=make_session_factory(engine),
             clock=clock,
-            extractor=extractor or MockLexiconExtractor(),
+            extractor=configured_extractor,
             storage=storage or LocalBlobStorage(settings.storage_dir),
             limits=Limits(max_file_bytes=settings.max_upload_bytes, max_files=settings.max_files_per_message),
         )
