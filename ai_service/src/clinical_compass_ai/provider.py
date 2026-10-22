@@ -4,6 +4,7 @@ import httpx
 
 from clinical_compass_ai.config import Settings
 from clinical_compass_ai.prompts import SYSTEM_PROMPT
+from clinical_compass_ai.schemas import ModelOutput
 
 
 class ProviderError(RuntimeError):
@@ -30,7 +31,16 @@ class OpenAICompatibleProvider:
             response = httpx.post(
                 self.settings.base_url.rstrip("/") + "/chat/completions",
                 headers={"Authorization": f"Bearer {self.settings.api_key}"},
-                json={"model": self.settings.model, "messages": messages, "temperature": 0, "response_format": {"type": "json_object"}},
+                json={
+                    "model": self.settings.model,
+                    "messages": messages,
+                    "temperature": 0,
+                    "response_format": {
+                        "type": "json_schema",
+                        "schema": ModelOutput.model_json_schema(),
+                        "strict": True,
+                    },
+                },
                 timeout=self.settings.timeout_seconds,
             )
             response.raise_for_status()
@@ -38,5 +48,11 @@ class OpenAICompatibleProvider:
             if not isinstance(content, str):
                 raise TypeError("non-text completion")
             return content
+        except httpx.HTTPStatusError as exc:
+            body = exc.response.text
+            if self.settings.api_key:
+                body = body.replace(self.settings.api_key, "[REDACTED]")
+            body = body[:2000]
+            raise ProviderError(f"provider HTTP {exc.response.status_code}: {body}") from None
         except (httpx.HTTPError, KeyError, IndexError, ValueError, TypeError) as exc:
             raise ProviderError(f"provider request failed: {exc}") from exc
