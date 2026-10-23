@@ -445,7 +445,7 @@ class _Messages extends StatelessWidget {
                       if (m['extraction_status'] != null)
                         StatusBadge(
                           label: switch (m['extraction_status']) {
-                            'extracted' => 'Обработано заглушкой ИИ',
+                            'extracted' => 'Обработано ИИ',
                             'failed' => 'ИИ недоступен — сообщение сохранено',
                             'pending' => 'Ожидает обработки',
                             _ => 'Без текста',

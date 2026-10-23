@@ -170,7 +170,9 @@ class _RoutingCard extends StatelessWidget {
       icon: Icons.alt_route,
       title: t?['title'] as String? ?? 'Решение врача: ${routeLabel(decision).toLowerCase()}',
       body: t?['body'] as String? ?? 'Подробности сообщит клиника.',
-      action: t != null && t['status'] != 'approved' ? const Row(children: [DemoTag(label: 'ЧЕРНОВИК ТЕКСТА')]) : null,
+      action: t != null && t['status'] != 'approved'
+          ? const Row(children: [DemoTag(label: 'ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ')])
+          : null,
     );
   }
 }
