@@ -8,7 +8,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict
@@ -17,13 +17,16 @@ from clinical_compass.domain.enums import (
     Confirmation,
     Experiencer,
     FactSource,
+    IntakeSlot,
+    IntakeStatus,
+    MissedReason,
     Polarity,
     RiskSignalType,
     SymptomType,
     Temporality,
     Tri,
 )
-from clinical_compass.domain.state import EvidenceSpan, RiskSignal, SymptomEvent
+from clinical_compass.domain.state import EvidenceSpan, MedicationIntake, RiskSignal, SymptomEvent
 
 
 class ExtractedEntity(BaseModel):
@@ -67,6 +70,24 @@ class Extractor(Protocol):
 class ExtractedFacts:
     symptoms: tuple[SymptomEvent, ...]
     risk_signals: tuple[RiskSignal, ...]
+    medication_intakes: tuple[MedicationIntake, ...]
+
+
+def _medication_slot_date(entity: ExtractedEntity, timestamp: datetime) -> date | None:
+    """Resolve an intake date only when it is deterministic from the text."""
+    raw_date = entity.value.get("slot_date")
+    if isinstance(raw_date, str):
+        try:
+            return date.fromisoformat(raw_date)
+        except ValueError:
+            pass
+
+    text = entity.evidence_span.text.lower().replace("ё", "е")
+    if "вчера" in text:
+        return timestamp.date() - timedelta(days=1)
+    if "сегодня" in text:
+        return timestamp.date()
+    return None
 
 
 def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str], str]) -> ExtractedFacts:
@@ -81,6 +102,7 @@ def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str]
     )
     symptoms: list[SymptomEvent] = []
     risks: list[RiskSignal] = []
+    medication_intakes: list[MedicationIntake] = []
     for e in extraction.entities:
         if e.polarity is not Polarity.PRESENT or e.experiencer is not Experiencer.PATIENT:
             continue
@@ -112,7 +134,51 @@ def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str]
                     confirmation=Confirmation.PENDING,
                 )
             )
-    return ExtractedFacts(symptoms=tuple(symptoms), risk_signals=tuple(risks))
+        elif e.type == "medication":
+            slot_date = _medication_slot_date(e, extraction.timestamp)
+            status_raw = e.value.get("status")
+            slot_raw = e.value.get("slot")
+
+            if (
+                slot_date is None
+                or status_raw not in {"taken", "missed"}
+                or slot_raw not in {"morning", "evening"}
+            ):
+                continue
+
+            status = IntakeStatus(status_raw)
+            missed_reason = None
+            if status is IntakeStatus.MISSED:
+                reason_raw = e.value.get("missed_reason", "unknown")
+                try:
+                    missed_reason = MissedReason(reason_raw)
+                except ValueError:
+                    missed_reason = MissedReason.UNKNOWN
+
+            drug = e.value.get("drug")
+            if not isinstance(drug, str) or not drug.strip() or drug == "unknown":
+                drug = None
+
+            medication_intakes.append(
+                MedicationIntake(
+                    id=new_id("intake"),
+                    drug=drug,
+                    dose_mg=e.value.get("dose_mg"),
+                    slot_date=slot_date,
+                    slot=IntakeSlot(slot_raw),
+                    status=status,
+                    missed_reason=missed_reason,
+                    marked_at=extraction.timestamp,
+                    source=source,
+                    confirmation=Confirmation.PENDING,
+                )
+            )
+
+    return ExtractedFacts(
+        symptoms=tuple(symptoms),
+        risk_signals=tuple(risks),
+        medication_intakes=tuple(medication_intakes),
+    )
 
 
 _PATTERNS: dict[RiskSignalType, tuple[str, ...]] = {

@@ -293,6 +293,18 @@ class PatientService:
         for symptom in facts.symptoms:
             self._d.repos.facts.add_symptom(patient_id, symptom, self._d.clock.now())
             self._d.audit(actor, "symptom.extracted", "symptom", symptom.id, patient_id)
+        for intake in facts.medication_intakes:
+            existing = self._d.repos.facts.intake_for_slot(patient_id, intake.slot_date, intake.slot)
+            if existing is not None:
+                continue
+            self._d.repos.facts.upsert_intake(patient_id, intake)
+            self._d.audit(
+                actor,
+                "medication_intake.extracted",
+                "intake",
+                intake.id,
+                patient_id,
+            )
 
     def add_lab(self, principal: Principal, patient_id: str, body: dict[str, Any]) -> Json:
         self._access.require_read(principal, patient_id)
