@@ -174,6 +174,25 @@ def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str]
                 )
             )
 
+    allergy_spans = [
+        risk.evidence_span for risk in risks if risk.type is RiskSignalType.POSSIBLE_ALLERGIC_REACTION
+    ]
+    if allergy_spans:
+        symptoms = [
+            symptom
+            for symptom in symptoms
+            if not (
+                symptom.normalized_type is SymptomType.OTHER_UNLISTED
+                and any(
+                    span is not None
+                    and (symptom_span := symptom.evidence_span) is not None
+                    and symptom_span.start >= span.start
+                    and symptom_span.end <= span.end
+                    for span in allergy_spans
+                )
+            )
+        ]
+
     return ExtractedFacts(
         symptoms=tuple(symptoms),
         risk_signals=tuple(risks),
