@@ -9,7 +9,7 @@ from clinical_compass.domain.state import EvidenceSpan
 from clinical_compass.evaluation import evaluate_extractor, rescore_saved_predictions
 
 
-def _write_jsonl(path: Path, rows: list[dict]) -> None:
+def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
     path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
 
 
