@@ -43,6 +43,7 @@ class ResponseDetail extends StatelessWidget {
             border: Border.all(color: AppColors.border),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < def.itemCount; i++) ...[
                 if (i > 0) const Divider(),
