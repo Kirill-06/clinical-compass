@@ -21,7 +21,9 @@ Access token получите по действующей процедуре Gig
 access token, а не Authorization Key: сервис передаёт его как Bearer token. Не сохраняйте оба ключа в файлах
 проекта и не добавляйте в git. Если для HTTPS нужен собственный CA bundle, задайте `SSL_CERT_FILE` с путём
 к читаемому файлу. `AI_MODEL` и `AI_API_KEY` нужны для `/extract`; `GET /health` работает и без них.
-`AI_TIMEOUT_SECONDS` по умолчанию равен 15 секундам.
+`AI_TIMEOUT_SECONDS` по умолчанию равен 15 секундам. Если задан `AI_SERVICE_TOKEN` (не короче 16 символов),
+`/extract` принимает только запросы с `Authorization: Bearer <токен>`; backend передаёт тот же токен из
+`CC_EXTRACTOR_TOKEN`. `/health` токена не требует. Скрипт `scripts/run-local-demo.sh` генерирует общий токен сам.
 
 Проверка:
 
