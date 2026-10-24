@@ -90,6 +90,13 @@ def _medication_slot_date(entity: ExtractedEntity, timestamp: datetime) -> date 
     return None
 
 
+def _dose_mg(raw: Any) -> float | None:
+    """Доза только числом: «50 мг» или мусор от модели не должны ронять весь факт."""
+    if isinstance(raw, bool) or not isinstance(raw, int | float):
+        return None
+    return float(raw) if raw > 0 else None
+
+
 def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str], str]) -> ExtractedFacts:
     """Сущности извлечения → факты Patient State.
 
@@ -163,7 +170,7 @@ def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str]
                 MedicationIntake(
                     id=new_id("intake"),
                     drug=drug,
-                    dose_mg=e.value.get("dose_mg"),
+                    dose_mg=_dose_mg(e.value.get("dose_mg")),
                     slot_date=slot_date,
                     slot=IntakeSlot(slot_raw),
                     status=status,

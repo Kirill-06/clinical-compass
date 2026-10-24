@@ -1,5 +1,6 @@
 """Сценарии пациента: опросники, приём препарата, самочувствие, сообщения врачу."""
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -24,7 +25,7 @@ from clinical_compass.domain.enums import (
     Temporality,
     Tri,
 )
-from clinical_compass.domain.extraction import FreeTextExtraction, facts_from_extraction
+from clinical_compass.domain.extraction import FreeTextExtraction, MockLexiconExtractor, facts_from_extraction
 from clinical_compass.domain.instruments import ScoringError, score_items
 from clinical_compass.domain.state import LabResult, MedicationIntake, QuestionnaireResponse, SymptomEvent
 from clinical_compass.services.access import AccessPolicy
@@ -33,6 +34,11 @@ from clinical_compass.services.errors import ConflictError, InvalidInputError, N
 from clinical_compass.services.presenter import Json, Presenter
 from clinical_compass.services.safety import SafetyService
 from clinical_compass.services.state import PatientStateService
+
+logger = logging.getLogger(__name__)
+
+_SAFETY_NET = MockLexiconExtractor()
+"""Встроенный словарь красных флагов: срабатывает, если основной экстрактор не справился."""
 
 
 @dataclass(frozen=True)
@@ -253,17 +259,7 @@ class PatientService:
         self._d.session.flush()
 
         if body:
-            try:
-                extraction = self._d.extractor.extract(
-                    message_id=message.id, patient_id=patient_id, timestamp=now, text=body
-                )
-            except Exception as exc:
-                message.extraction_status = "failed"
-                message.extraction_error = str(exc)[:500]
-            else:
-                self.ingest_extraction(patient_id, extraction, principal)
-                message.extraction_status = "extracted"
-                message.clarifying_questions = list(extraction.clarifying_questions)
+            self._extract_facts(principal, message, body)
 
         alerts = self._state.evaluate(patient_id, principal)
         return {
@@ -275,8 +271,45 @@ class PatientService:
             "patient_notices": self._present.notices(alerts),
         }
 
+    def _extract_facts(self, principal: Principal, message: MessageRow, text: str) -> None:
+        """Извлечь факты из текста сообщения. Сообщение уже сохранено и не теряется.
+
+        Любой сбой AI-слоя (недоступен, таймаут, ответ не разбирается) помечает
+        сообщение как «не обработано», а текст всё равно проверяется встроенным
+        словарём красных флагов: недоступность модели не должна скрывать
+        сигнал о самоповреждении или передозировке.
+        """
+        patient_id, now = message.patient_id, message.created_at
+        try:
+            extraction = self._d.extractor.extract(
+                message_id=message.id, patient_id=patient_id, timestamp=now, text=text
+            )
+            self.ingest_extraction(patient_id, extraction, principal)
+        except Exception as exc:
+            logger.warning("Извлечение фактов из сообщения %s не удалось: %s", message.id, exc)
+            message.extraction_status = "failed"
+            message.extraction_error = str(exc)[:500]
+            self._apply_safety_net(principal, message, text)
+            return
+        message.extraction_status = "extracted"
+        message.clarifying_questions = list(extraction.clarifying_questions)
+
+    def _apply_safety_net(self, principal: Principal, message: MessageRow, text: str) -> None:
+        if isinstance(self._d.extractor, MockLexiconExtractor):
+            return  # словарь и был основным экстрактором — повторять нечего
+        fallback = _SAFETY_NET.extract(
+            message_id=message.id, patient_id=message.patient_id, timestamp=message.created_at, text=text
+        )
+        if fallback.entities:
+            self.ingest_extraction(message.patient_id, fallback, principal)
+
     def ingest_extraction(self, patient_id: str, extraction: FreeTextExtraction, actor: Principal) -> None:
-        """Факты из текста сохраняются как `pending` до подтверждения (§10.1)."""
+        """Факты из текста сохраняются как `pending` до подтверждения (§10.1).
+
+        Сначала разбирается весь ответ модели и только потом что-либо пишется:
+        если ответ не разбирается, в базе не остаётся половины фактов.
+        """
+        facts = facts_from_extraction(extraction, new_id)
         self._d.repos.messages.add(
             ExtractionRow(
                 message_id=extraction.message_id,
@@ -286,7 +319,6 @@ class PatientService:
                 created_at=self._d.clock.now(),
             )
         )
-        facts = facts_from_extraction(extraction, new_id)
         for signal in facts.risk_signals:
             self._d.repos.facts.add_risk_signal(patient_id, signal)
             self._d.audit(actor, "risk_signal.extracted", "risk_signal", signal.id, patient_id)
