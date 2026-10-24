@@ -71,6 +71,7 @@ class RulesScreen extends StatelessWidget {
                 Panel(
                   padding: EdgeInsets.zero,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final (i, x) in rules.indexed) ...[
                         if (i > 0) const Divider(),

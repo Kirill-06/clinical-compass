@@ -120,6 +120,7 @@ class _Table extends StatelessWidget {
           child: ClipRRect(
             borderRadius: Radii.mdAll,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (wide)
                   Container(

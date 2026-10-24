@@ -72,6 +72,7 @@ class SlotGrid extends StatelessWidget {
     }
     final dates = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final (i, d) in dates.indexed) ...[
           if (i > 0) const Divider(),

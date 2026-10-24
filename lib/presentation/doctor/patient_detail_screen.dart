@@ -55,6 +55,7 @@ class _Dossier extends StatelessWidget {
     final twoCols = width >= 1180;
     final scores = ScoresPanel(responses: [for (final r in d['questionnaires']! as List) asJson(r)]);
     final side = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SchedulesPanel(patientId: pid, schedules: [for (final s in d['schedules']! as List) asJson(s)]),
         const SizedBox(height: Space.x5),
@@ -103,6 +104,7 @@ class _Dossier extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: Radii.mdAll,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final (i, a) in _sorted(open).indexed) ...[
                         if (i > 0) const Divider(),
@@ -258,6 +260,7 @@ Future<void> _routingDialog(BuildContext context, String pid, RouteDecision curr
                 groupValue: choice,
                 onChanged: (v) => setState(() => choice = v ?? choice),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (final r in const [RouteDecision.none, RouteDecision.preferred, RouteDecision.required])
                       RadioListTile<RouteDecision>(
