@@ -4,6 +4,7 @@
 тексты пациенту — реестр шаблонов. Медицинских выводов здесь нет.
 """
 
+from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
 
@@ -320,78 +321,74 @@ class Presenter:
     # ------------------------------------------------------------ лента и задачи
 
     def timeline(self, patient_id: str, *, for_patient: bool) -> list[Json]:
-        """Каждый факт — одна запись, от новых к старым."""
-        c, facts = self._d.contracts, self._d.repos.facts
-        events: list[Json] = []
+        """Каждый факт — одна запись, от новых к старым. Пациент не видит служебных событий."""
+        sources = [
+            self._questionnaire_events(patient_id),
+            self._intake_events(patient_id),
+            self._symptom_events(patient_id, form_only=for_patient),
+            self._message_events(patient_id),
+        ]
+        if not for_patient:
+            sources += [self._alert_events(patient_id), self._routing_events(patient_id)]
+        events = [e for source in sources for e in source if e["at"] is not None]
+        return sorted(events, key=lambda e: e["at"], reverse=True)
 
-        def add(
-            at: datetime | None, kind: str, title: str, detail: str | None = None, author: str = "Пациент"
-        ) -> None:
-            if at is not None:
-                events.append(
-                    {"at": iso(at), "kind": kind, "title": title, "detail": detail, "author": author}
-                )
-
-        for q in facts.questionnaires(patient_id):
-            definition = c.instruments[q.instrument]
+    def _questionnaire_events(self, patient_id: str) -> Iterator[Json]:
+        for q in self._d.repos.facts.questionnaires(patient_id):
+            definition = self._d.contracts.instruments[q.instrument]
             band = definition.band_for(q.total_score).label if q.total_score is not None else None
-            add(
-                q.administered_at,
-                "questionnaire",
-                f"{definition.label} заполнен: {q.total_score} из {definition.max_score}",
-                band,
-            )
-        for i in latest_by_slot(facts.intakes(patient_id)).values():
+            title = f"{definition.label} заполнен: {q.total_score} из {definition.max_score}"
+            yield _event(q.administered_at, "questionnaire", title, band)
+
+    def _intake_events(self, patient_id: str) -> Iterator[Json]:
+        c = self._d.contracts
+        for i in latest_by_slot(self._d.repos.facts.intakes(patient_id)).values():
             slot = (c.label("intake_slots", i.slot.value) or "").lower()
             verb = "принял" if i.status is IntakeStatus.TAKEN else "пропустил"
             reason = c.label("missed_reasons", i.missed_reason.value) if i.missed_reason else None
-            add(i.marked_at, "intake", f"Приём {i.slot_date.isoformat()}, {slot}: {verb}", reason)
-        for symptom, row in facts.symptoms(patient_id):
-            if for_patient and symptom.source is not FactSource.FORM:
+            yield _event(i.marked_at, "intake", f"Приём {i.slot_date.isoformat()}, {slot}: {verb}", reason)
+
+    def _symptom_events(self, patient_id: str, *, form_only: bool) -> Iterator[Json]:
+        for symptom, row in self._d.repos.facts.symptoms(patient_id):
+            if form_only and symptom.source is not FactSource.FORM:
                 continue
-            add(
-                row.reported_at,
-                "symptom",
-                f"Самочувствие: {c.label('symptom_types', symptom.normalized_type.value)}",
-                symptom.patient_phrase,
+            label = self._d.contracts.label("symptom_types", symptom.normalized_type.value)
+            yield _event(row.reported_at, "symptom", f"Самочувствие: {label}", symptom.patient_phrase)
+
+    def _message_events(self, patient_id: str) -> Iterator[Json]:
+        messages = self._d.repos.messages.for_patient(patient_id)
+        files = self._d.repos.messages.attachments([m.id for m in messages])
+        for m in messages:
+            count = len(files.get(m.id, []))
+            title = f"Сообщение врачу, файлов: {count}" if count else "Сообщение врачу"
+            yield _event(m.created_at, "message", title, m.text)
+
+    def _alert_events(self, patient_id: str) -> Iterator[Json]:
+        for a in self._d.repos.alerts.for_patient(patient_id):
+            yield _event(
+                a.created_at,
+                "alert",
+                f"Правило {a.rule_id}: {self._d.contracts.rule_title(a.rule_id)}",
+                f"Приоритет {a.doctor_priority}, действие пациенту {a.patient_action}",
+                author="Rule engine",
             )
-        for m in self._d.repos.messages.for_patient(patient_id):
-            files = len(self._d.repos.messages.attachments([m.id])[m.id])
-            title = f"Сообщение врачу, файлов: {files}" if files else "Сообщение врачу"
-            add(m.created_at, "message", title, m.text)
-        if not for_patient:
-            for a in self._d.repos.alerts.for_patient(patient_id):
-                add(
-                    a.created_at,
-                    "alert",
-                    f"Правило {a.rule_id}: {c.rule_title(a.rule_id)}",
-                    f"Приоритет {a.doctor_priority}, действие пациенту {a.patient_action}",
-                    "Rule engine",
+            if a.resolved_at:
+                yield _event(
+                    a.resolved_at, "alert_resolved", f"Алерт {a.rule_id} закрыт", author=a.resolved_by or "—"
                 )
-                if a.resolved_at:
-                    add(
-                        a.resolved_at,
-                        "alert_resolved",
-                        f"Алерт {a.rule_id} закрыт",
-                        author=a.resolved_by or "—",
-                    )
-                elif a.acknowledged_at:
-                    add(
-                        a.acknowledged_at,
-                        "alert_ack",
-                        f"Алерт {a.rule_id} принят в работу",
-                        author=a.acknowledged_by or "—",
-                    )
-            routing = self._d.repos.care.routing(patient_id)
-            if routing.confirmed_at:
-                add(
-                    routing.confirmed_at,
-                    "routing",
-                    f"Решение по маршрутизации: {routing.doctor_decision.value}",
-                    author="Врач",
+            elif a.acknowledged_at:
+                yield _event(
+                    a.acknowledged_at,
+                    "alert_ack",
+                    f"Алерт {a.rule_id} принят в работу",
+                    author=a.acknowledged_by or "—",
                 )
-        events.sort(key=lambda e: e["at"], reverse=True)
-        return events
+
+    def _routing_events(self, patient_id: str) -> Iterator[Json]:
+        routing = self._d.repos.care.routing(patient_id)
+        if routing.confirmed_at:
+            title = f"Решение по маршрутизации: {routing.doctor_decision.value}"
+            yield _event(routing.confirmed_at, "routing", title, author="Врач")
 
     def booking(self, task: BookingTaskRow) -> Json:
         """Для администратора — только контакт и срок, без клинических данных (§15)."""
@@ -440,3 +437,10 @@ def _reference_range(low: float | None, high: float | None) -> str:
     if high is not None:
         return f" (референс до {high:g})"
     return ""
+
+
+def _event(
+    at: datetime | None, kind: str, title: str, detail: str | None = None, *, author: str = "Пациент"
+) -> Json:
+    """Запись ленты: время ISO, вид, заголовок, подробности и автор."""
+    return {"at": iso(at), "kind": kind, "title": title, "detail": detail, "author": author}

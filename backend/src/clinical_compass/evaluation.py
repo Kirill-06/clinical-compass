@@ -173,78 +173,76 @@ def _semantic_metrics(rows: list[Json], predictions: list[Json]) -> Json:
 
 
 def evaluate_extractor(extractor: Extractor, dataset_path: Path) -> EvalResult:
+    """Прогнать extractor по размеченному набору и посчитать метрики извлечения."""
     rows = _read_rows(dataset_path)
-
-    latencies_ms: list[float] = []
     predictions: list[Json] = []
-    valid = 0
-    failures = 0
-    exact_span_hits = 0
-    matched_for_span = 0
-
+    latencies_ms: list[float] = []
+    exact_span_hits = matched_for_span = 0
     for index, row in enumerate(rows):
-        message_id = str(row["message_id"])
-        text = str(row["text"])
+        prediction = _predict(extractor, index, row)
+        predictions.append(prediction)
+        latencies_ms.append(prediction["latency_ms"])
+        # Точность фрагментов — только среди сущностей, чью метку удалось сопоставить точно.
         gold_entities = [_gold_to_flat(e) for e in row.get("gold_entities", [])]
-
-        started = time.perf_counter()
-        try:
-            extraction: FreeTextExtraction = extractor.extract(
-                message_id=message_id,
-                patient_id="eval-patient",
-                timestamp=datetime(2026, 10, 22, 12, 0, index % 60, tzinfo=UTC),
-                text=text,
-            )
-        except Exception as exc:  # evaluation must record model/provider failures, not abort the run
-            latency = (time.perf_counter() - started) * 1000
-            latencies_ms.append(latency)
-            failures += 1
-            predictions.append(
-                {
-                    "message_id": message_id,
-                    "text": text,
-                    "error": f"{type(exc).__name__}: {exc}",
-                    "latency_ms": round(latency, 3),
-                    "predicted_entities": [],
-                }
-            )
-            pred_entities: list[Json] = []
-        else:
-            latency = (time.perf_counter() - started) * 1000
-            latencies_ms.append(latency)
-            valid += 1
-            pred_entities = [_prediction_to_flat(e) for e in extraction.entities]
-            predictions.append(
-                {
-                    "message_id": message_id,
-                    "text": text,
-                    "latency_ms": round(latency, 3),
-                    "model_version": extraction.model_version,
-                    "predicted_entities": pred_entities,
-                    "unknown_fields": list(extraction.unknown_fields),
-                    "clarifying_questions": list(extraction.clarifying_questions),
-                }
-            )
-
-        # Evidence-span accuracy only among entities whose semantic label can be paired exactly.
-        row_exact_hits, row_matched = _count_exact_spans(gold_entities, pred_entities)
-        exact_span_hits += row_exact_hits
+        row_hits, row_matched = _count_exact_spans(gold_entities, prediction["predicted_entities"])
+        exact_span_hits += row_hits
         matched_for_span += row_matched
 
+    failures = sum(1 for p in predictions if "error" in p)
     metrics: Json = {
         **_semantic_metrics(rows, predictions),
-        "schema_pass_rate": round(valid / len(rows), 6) if rows else 1.0,
+        "schema_pass_rate": round((len(rows) - failures) / len(rows), 6) if rows else 1.0,
         "failed_messages": failures,
-        "evidence_span_exact_match": (
-            round(exact_span_hits / matched_for_span, 6) if matched_for_span else None
-        ),
-        "latency_ms": {
-            "mean": round(statistics.fmean(latencies_ms), 3) if latencies_ms else None,
-            "p50": round(_percentile(latencies_ms, 0.50) or 0.0, 3) if latencies_ms else None,
-            "p95": round(_percentile(latencies_ms, 0.95) or 0.0, 3) if latencies_ms else None,
-        },
+        "evidence_span_exact_match": round(exact_span_hits / matched_for_span, 6)
+        if matched_for_span
+        else None,
+        "latency_ms": _latency_summary(latencies_ms),
     }
     return EvalResult(metrics=metrics, predictions=predictions)
+
+
+def _predict(extractor: Extractor, index: int, row: Json) -> Json:
+    """Одно сообщение набора → запись предсказания. Сбой модели записывается, а не прерывает прогон."""
+    message_id, text = str(row["message_id"]), str(row["text"])
+    started = time.perf_counter()
+    try:
+        extraction: FreeTextExtraction = extractor.extract(
+            message_id=message_id,
+            patient_id="eval-patient",
+            timestamp=datetime(2026, 10, 22, 12, 0, index % 60, tzinfo=UTC),
+            text=text,
+        )
+    except Exception as exc:
+        return {
+            "message_id": message_id,
+            "text": text,
+            "error": f"{type(exc).__name__}: {exc}",
+            "latency_ms": _elapsed_ms(started),
+            "predicted_entities": [],
+        }
+    return {
+        "message_id": message_id,
+        "text": text,
+        "latency_ms": _elapsed_ms(started),
+        "model_version": extraction.model_version,
+        "predicted_entities": [_prediction_to_flat(e) for e in extraction.entities],
+        "unknown_fields": list(extraction.unknown_fields),
+        "clarifying_questions": list(extraction.clarifying_questions),
+    }
+
+
+def _elapsed_ms(started: float) -> float:
+    return round((time.perf_counter() - started) * 1000, 3)
+
+
+def _latency_summary(latencies_ms: list[float]) -> Json:
+    if not latencies_ms:
+        return {"mean": None, "p50": None, "p95": None}
+    return {
+        "mean": round(statistics.fmean(latencies_ms), 3),
+        "p50": round(_percentile(latencies_ms, 0.50) or 0.0, 3),
+        "p95": round(_percentile(latencies_ms, 0.95) or 0.0, 3),
+    }
 
 
 def rescore_saved_predictions(
