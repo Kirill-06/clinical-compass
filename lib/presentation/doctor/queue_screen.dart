@@ -103,6 +103,7 @@ class _QueueScreenState extends State<QueueScreen> {
                     child: ClipRRect(
                       borderRadius: Radii.mdAll,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final (i, a) in visible.indexed) ...[
                             if (i > 0) const Divider(),

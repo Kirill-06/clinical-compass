@@ -360,6 +360,7 @@ class _Symptoms extends StatelessWidget {
     return Panel(
       padding: EdgeInsets.zero,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final (i, s) in symptoms.indexed) ...[
             if (i > 0) const Divider(),
@@ -429,6 +430,7 @@ class _Messages extends StatelessWidget {
     return Panel(
       padding: EdgeInsets.zero,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final (i, m) in messages.indexed) ...[
             if (i > 0) const Divider(),
@@ -515,6 +517,7 @@ class _Labs extends StatelessWidget {
     return Panel(
       padding: EdgeInsets.zero,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final (i, l) in labs.indexed) ...[
             if (i > 0) const Divider(),
@@ -549,6 +552,7 @@ class _Timeline extends StatelessWidget {
     return Panel(
       padding: const EdgeInsets.symmetric(vertical: Space.x2),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final e in events)
             Padding(
@@ -645,6 +649,7 @@ class _Audit extends StatelessWidget {
       builder: (context, events) => Panel(
         padding: const EdgeInsets.symmetric(vertical: Space.x2),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (final e in events.take(200))
               Padding(
