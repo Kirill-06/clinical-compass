@@ -171,7 +171,7 @@ class _EmergencyPanelState extends State<_EmergencyPanel> {
                           const Row(
                             children: [
                               DemoTag(
-                                label: 'ЧЕРНОВИК ТЕКСТА',
+                                label: 'ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ',
                                 tooltip: 'Текст ожидает утверждения медицинским экспертом',
                               ),
                             ],

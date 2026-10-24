@@ -79,7 +79,10 @@ class NoticeCard extends StatelessWidget {
                       label: const Text('Позвонить 112'),
                     ),
                   if (draft)
-                    const DemoTag(label: 'ЧЕРНОВИК ТЕКСТА', tooltip: 'Текст ожидает утверждения медицинским экспертом'),
+                    const DemoTag(
+                      label: 'ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ',
+                      tooltip: 'Текст ожидает утверждения медицинским экспертом',
+                    ),
                 ],
               )
             : null,

@@ -457,3 +457,18 @@ def test_questionnaire_is_due_from_the_start_of_the_due_day() -> None:
     early_on_due_day = filled + timedelta(days=13, hours=13)  # 14-й день, 01:00 UTC
     assert schedule_status(schedule, responses, T0, early_on_due_day).status is DueStatus.DUE
     assert schedule_status(schedule, responses, T0, filled + timedelta(days=13)).status is DueStatus.UPCOMING
+
+
+def test_unknown_medication_slot_matches_patient_state_schema(contracts: Contracts) -> None:
+    intake = MedicationIntake(
+        id="unknown-slot",
+        slot_date=date(2026, 10, 22),
+        slot=IntakeSlot.UNKNOWN,
+        status=IntakeStatus.MISSED,
+        source=FactSource.TEXT_LLM,
+        confirmation=Confirmation.PENDING,
+    )
+    document = state(medication_intakes=(intake,)).to_schema()
+    assert document["medication_intakes"][0]["slot"] == "unknown"
+    assert contracts.schema_errors(document) == []
+    assert PatientState.from_schema(document).medication_intakes[0].slot is IntakeSlot.UNKNOWN
