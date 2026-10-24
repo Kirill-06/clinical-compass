@@ -1,30 +1,54 @@
-# Clinical Compass AI extraction
+# Сервис AI-извлечения «Клинического компаса»
 
-The service converts patient free text to the backend's existing `FreeTextExtraction` v0.2 JSON. It does not make clinical decisions, set doctor priority or patient action, or produce advice. The provider is an OpenAI-compatible Chat Completions endpoint; the extraction and validation code is separate from its HTTP transport.
+Сервис преобразует свободный текст пациента в `FreeTextExtraction` v0.2 для backend. Он не принимает
+клинических решений, не задаёт приоритет врачу и действие пациенту, не составляет рекомендаций. Провайдер
+подключается через совместимый с OpenAI Chat Completions API; извлечение и проверка результата отделены
+от HTTP-транспорта.
 
-## Setup and run
+## Запуск
 
-From the repository root:
+Из корня репозитория:
 
 ```bash
 cd ai_service
-export AI_MODEL='your-model-id'
-export AI_API_KEY='your-secret-key'
-export AI_BASE_URL='https://api.openai.com/v1'  # optional compatible endpoint
+export AI_MODEL='GigaChat-3-Ultra'
+export AI_API_KEY='<действующий access token>'
+export AI_BASE_URL='<адрес OpenAI-compatible API GigaChat с суффиксом /v1>'
 UV_CACHE_DIR=/tmp/uv-cache uv run uvicorn clinical_compass_ai.main:app --host 127.0.0.1 --port 8090
 ```
 
-`AI_MODEL` and `AI_API_KEY` are required for `/extract`. `GET /health` remains available without them. `AI_TIMEOUT_SECONDS` defaults to 15. The service makes one repair attempt for malformed model output and returns HTTP 502 if validation still fails. Provider failures return HTTP 502; missing configuration returns HTTP 503. Keep credentials in the environment, not in git.
+Access token получите по действующей процедуре GigaChat для своего аккаунта. `AI_API_KEY` принимает именно
+access token, а не Authorization Key: сервис передаёт его как Bearer token. Не сохраняйте оба ключа в файлах
+проекта и не добавляйте в git. Если для HTTPS нужен собственный CA bundle, задайте `SSL_CERT_FILE` с путём
+к читаемому файлу. `AI_MODEL` и `AI_API_KEY` нужны для `/extract`; `GET /health` работает и без них.
+`AI_TIMEOUT_SECONDS` по умолчанию равен 15 секундам.
 
-Example request:
+Проверка:
+
+```bash
+curl http://127.0.0.1:8090/health
+```
+
+Пример запроса к `/extract`:
 
 ```bash
 curl -X POST http://127.0.0.1:8090/extract -H 'Content-Type: application/json' -d '{"message_id":"m1","patient_id":"p1","timestamp":"2026-10-22T12:00:00Z","text":"Болит голова","schema_version":"0.2.0"}'
 ```
 
-The response is a full `FreeTextExtraction`. Each entity has exact source offsets. A unique exact substring may repair incorrect offsets. Ambiguous or absent evidence causes an extraction error. The model output must use the annotation v0.2 entity vocabulary. Only symptom annotations carry `polarity`, `experiencer`, and `temporality`. The adapter fills these fields for other entity types in the backend transport contract.
+Ответ — полный `FreeTextExtraction`. Для сущностей нужны точные позиции фрагментов в исходном тексте.
+Неоднозначные или отсутствующие подтверждения приводят к ошибке. При некорректном ответе модели сервис
+делает одну попытку исправления, затем возвращает HTTP 502. Ошибки провайдера тоже дают HTTP 502,
+отсутствие настроек — HTTP 503. Словарь сущностей соответствует разметке v0.2.
 
-## Tests
+Для подключения backend задайте `CC_EXTRACTOR_MODE=remote` и
+`CC_EXTRACTOR_URL=http://127.0.0.1:8090/extract`. Локальный запуск обоих процессов описан в
+[основном README](../README.md#локальный-стенд-с-gigachat). Backend сохраняет сообщение до извлечения,
+проверяет структуру ответа и переносит факты в Patient State. Правила срабатывают отдельно от LLM.
+При ошибке внешнего extractor локальный лексикон проверяет только критические red-flag фразы.
+Полученные из текста факты могут оставаться в статусе `pending`; этот контур не является клинически
+валидированной системой.
+
+## Тесты
 
 ```bash
 cd ai_service
@@ -33,9 +57,9 @@ cd ../backend
 PYTHONPATH=src uv run pytest
 ```
 
-## Real model evaluation
+## Оценка с моделью
 
-With the service running on port 8090:
+При работающем сервисе на порту 8090:
 
 ```bash
 cd backend
@@ -44,8 +68,13 @@ export CC_EXTRACTOR_URL=http://127.0.0.1:8090/extract
 PYTHONPATH=src uv run clinical-compass evaluate-extractor ../evaluation/data/generated_annotations.v1.1.jsonl --out-dir ../evaluation/out
 ```
 
-The existing evaluator writes `evaluation/out/predictions.jsonl` and `evaluation/out/metrics.json`. Its outputs should be reviewed before any clinical use. The first real run requires reachable provider credentials and an API implementing OpenAI-compatible `/chat/completions` with JSON response format.
+Существующий оценщик записывает `evaluation/out/predictions.jsonl` и `evaluation/out/metrics.json`.
+Это оценка извлечения на наборе сообщений, не клиническая валидация. Для запуска нужны доступный
+провайдер и поддержка JSON response format в совместимом API.
 
-## Contract caveat
+## Особенность контракта
 
-The annotation schema does not carry polarity, experiencer, or temporality on medication, risk, and lab entities, while `ExtractedEntity` requires them. The adapter supplies `present`, `patient`, and `current` for medication, risk, and lab entities after semantic extraction. These are transport compatibility fields, not gold labels. Patient State now accepts medication `slot=unknown` without inferring morning or evening.
+Схема разметки не содержит `polarity`, `experiencer` и `temporality` для лекарств, сигналов риска и
+анализов, хотя `ExtractedEntity` требует эти поля. Адаптер заполняет их значениями `present`, `patient`
+и `current` после извлечения. Это поля транспортного контракта, а не эталонные метки. Patient State
+принимает `slot=unknown` для лекарства без догадки об утреннем или вечернем приёме.
