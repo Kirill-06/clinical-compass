@@ -77,6 +77,7 @@ class _InstrumentBlock extends StatelessWidget {
           Panel(
             padding: EdgeInsets.zero,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final (i, r) in responses.indexed) ...[
                   if (i > 0) const Divider(),

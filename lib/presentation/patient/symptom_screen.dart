@@ -101,6 +101,7 @@ class _SymptomScreenState extends State<SymptomScreen> {
           child: Panel(
             padding: const EdgeInsets.symmetric(vertical: Space.x1),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final t in SymptomType.values)
                   InkWell(

@@ -271,6 +271,7 @@ class _QuestionnaireFlowScreenState extends State<QuestionnaireFlowScreen> {
       Panel(
         padding: EdgeInsets.zero,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < _def.itemCount; i++) ...[
               if (i > 0) const Divider(),

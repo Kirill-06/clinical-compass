@@ -63,6 +63,7 @@ class AdminScreen extends StatelessWidget {
                   Panel(
                     padding: EdgeInsets.zero,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         for (final (i, t) in tasks.indexed) ...[if (i > 0) const Divider(), _TaskRow(task: t)],
                       ],
