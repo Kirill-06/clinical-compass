@@ -11,12 +11,16 @@ def test_gigachat_json_schema_payload_and_content(monkeypatch):
 
     def fake_post(url, *, headers, json, timeout):
         captured.update(url=url, headers=headers, payload=json, timeout=timeout)
-        return httpx.Response(200, json={"choices": [{"message": {"content": '{"entities": [], "unknown_fields": []}'}}]},
-                              request=httpx.Request("POST", url))
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"entities": [], "unknown_fields": []}'}}]},
+            request=httpx.Request("POST", url),
+        )
 
     monkeypatch.setattr(httpx, "post", fake_post)
-    provider = OpenAICompatibleProvider(Settings(model="GigaChat-3-Ultra", api_key="test-secret",
-                                                 base_url="https://example.test/v1"))
+    provider = OpenAICompatibleProvider(
+        Settings(model="GigaChat-3-Ultra", api_key="test-secret", base_url="https://example.test/v1")
+    )
     assert provider.complete("text") == '{"entities": [], "unknown_fields": []}'
     assert captured["url"] == "https://example.test/v1/chat/completions"
     assert captured["payload"]["response_format"] == {
@@ -35,8 +39,9 @@ def test_upstream_400_reports_bounded_body_without_secret(monkeypatch):
         return httpx.Response(400, text=body, request=httpx.Request("POST", url))
 
     monkeypatch.setattr(httpx, "post", fake_post)
-    provider = OpenAICompatibleProvider(Settings(model="GigaChat-3-Ultra", api_key=secret,
-                                                 base_url="https://example.test/v1"))
+    provider = OpenAICompatibleProvider(
+        Settings(model="GigaChat-3-Ultra", api_key=secret, base_url="https://example.test/v1")
+    )
     with pytest.raises(ProviderError) as error:
         provider.complete("text")
     message = str(error.value)

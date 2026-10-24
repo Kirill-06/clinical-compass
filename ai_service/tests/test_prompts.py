@@ -19,14 +19,18 @@ class FakeProvider:
 
 def entity(kind, text, evidence, **fields):
     start = text.index(evidence)
-    return {"entity_type": kind, "evidence_span": {"text": evidence, "start": start,
-            "end": start + len(evidence)}, **fields}
+    return {
+        "entity_type": kind,
+        "evidence_span": {"text": evidence, "start": start, "end": start + len(evidence)},
+        **fields,
+    }
 
 
 def extract_with_fake(text, *entities):
     provider = FakeProvider(entities)
-    request = ExtractRequest(message_id="prompt-case", patient_id="patient-1",
-                             timestamp="2026-10-22T12:00:00Z", text=text)
+    request = ExtractRequest(
+        message_id="prompt-case", patient_id="patient-1", timestamp="2026-10-22T12:00:00Z", text=text
+    )
     output = extract(request, provider, "fake")
     assert provider.calls == 1
     assert output.model_version == "fake:extractor_prompt_v1.2"
@@ -53,7 +57,7 @@ def test_prompt_medication_symptom_and_duplicate_instructions():
         assert reason in prompt
     assert "do not infer a reason" in prompt
     assert 'drug="unknown"' in prompt
-    assert "word \"tablet\" as a drug name" in prompt
+    assert 'word "tablet" as a drug name' in prompt
     assert "most specific canonical normalized_type" in prompt
     assert "explicit negation" in prompt and "other-person experiencer" in prompt
     assert "recent_past/earlier" in prompt and "hypothetical wording" in prompt
@@ -61,10 +65,13 @@ def test_prompt_medication_symptom_and_duplicate_instructions():
     assert "genuinely different facts" in prompt
 
 
-@pytest.mark.parametrize(("text", "reason"), [
-    ("Не выпил таблетку: от неё вчера кружилась голова.", "adverse_event"),
-    ("Пропустил таблетку, потому что плохо себя чувствовал.", "felt_unwell"),
-])
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("Не выпил таблетку: от неё вчера кружилась голова.", "adverse_event"),
+        ("Пропустил таблетку, потому что плохо себя чувствовал.", "felt_unwell"),
+    ],
+)
 def test_fake_provider_missed_reason_without_optional_drug(text, reason):
     item = entity("medication", text, text, status="missed", slot="unknown", missed_reason=reason)
     assert "drug" not in item and "dose_mg" not in item
@@ -76,10 +83,16 @@ def test_fake_provider_missed_reason_without_optional_drug(text, reason):
 
 def test_fake_provider_allergy_risk_and_distinct_symptom_survive_json_contract():
     text = "После таблетки отекли губы и стало трудно дышать."
-    risk = entity("risk_signal", text, "отекли губы и стало трудно дышать",
-                  type="possible_allergic_reaction")
-    symptom = entity("symptom", text, "стало трудно дышать", normalized_type="other_unlisted",
-                     polarity="present", experiencer="patient", temporality="current")
+    risk = entity("risk_signal", text, "отекли губы и стало трудно дышать", type="possible_allergic_reaction")
+    symptom = entity(
+        "symptom",
+        text,
+        "стало трудно дышать",
+        normalized_type="other_unlisted",
+        polarity="present",
+        experiencer="patient",
+        temporality="current",
+    )
     output = extract_with_fake(text, risk, symptom)
     assert [item.type for item in output.entities] == ["risk_signal", "symptom"]
     assert output.entities[0].value["type"] == "possible_allergic_reaction"
@@ -88,9 +101,23 @@ def test_fake_provider_allergy_risk_and_distinct_symptom_survive_json_contract()
 
 def test_fake_provider_one_symptom_fact_and_distinct_second_fact():
     text = "Болит голова и тошнит."
-    headache = entity("symptom", text, "Болит голова", normalized_type="headache",
-                      polarity="present", experiencer="patient", temporality="current")
-    nausea = entity("symptom", text, "тошнит", normalized_type="nausea",
-                    polarity="present", experiencer="patient", temporality="current")
+    headache = entity(
+        "symptom",
+        text,
+        "Болит голова",
+        normalized_type="headache",
+        polarity="present",
+        experiencer="patient",
+        temporality="current",
+    )
+    nausea = entity(
+        "symptom",
+        text,
+        "тошнит",
+        normalized_type="nausea",
+        polarity="present",
+        experiencer="patient",
+        temporality="current",
+    )
     output = extract_with_fake(text, headache, nausea)
     assert [item.value["normalized_type"] for item in output.entities] == ["headache", "nausea"]

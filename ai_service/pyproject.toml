@@ -8,7 +8,7 @@ dependencies = ["clinical-compass-backend", "fastapi>=0.157", "httpx>=0.28", "py
 clinical-compass-backend = { path = "../backend", editable = true }
 
 [dependency-groups]
-dev = ["pytest>=9.1"]
+dev = ["mypy>=2.4.0", "pytest>=9.1", "ruff>=0.17.1", "types-jsonschema>=4.26.0"]
 
 [build-system]
 requires = ["hatchling"]
@@ -19,3 +19,35 @@ packages = ["src/clinical_compass_ai"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src", "../backend/src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PL", "PT", "RET", "TID", "ARG"]
+ignore = ["PLR0913", "PLR2004", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004", "ARG", "PLR0917", "PT018"]
+# Текст промптов — данные для модели; переносы строк внутри него меняли бы смысл разметки.
+"src/clinical_compass_ai/prompts.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["clinical_compass_ai", "clinical_compass"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = ["src", "../backend/src"]
+packages = ["clinical_compass_ai"]
+
+[[tool.mypy.overrides]]
+module = ["jsonschema.*"]
+ignore_missing_imports = true

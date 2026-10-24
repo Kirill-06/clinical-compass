@@ -1,7 +1,7 @@
-from clinical_compass.domain.extraction import ExtractedEntity, FreeTextExtraction
-from clinical_compass.domain.state import EvidenceSpan
 from pydantic import ValidationError
 
+from clinical_compass.domain.extraction import ExtractedEntity, FreeTextExtraction
+from clinical_compass.domain.state import EvidenceSpan
 from clinical_compass_ai.prompts import PROMPT_VERSION
 from clinical_compass_ai.provider import Provider
 from clinical_compass_ai.schemas import ExtractRequest, ModelOutput
@@ -15,7 +15,7 @@ def _validated_output(raw: str, text: str) -> ModelOutput:
     output = ModelOutput.model_validate_json(raw)
     for entity in output.entities:
         span = entity.evidence_span
-        if span.end <= span.start or span.end > len(text) or text[span.start:span.end] != span.text:
+        if span.end <= span.start or span.end > len(text) or text[span.start : span.end] != span.text:
             if text.count(span.text) != 1:
                 raise ValueError("evidence span offsets invalid and exact substring is not unique")
             start = text.index(span.text)
@@ -44,8 +44,22 @@ def extract(request: ExtractRequest, provider: Provider, model_version: str) -> 
         polarity = data.pop("polarity") if kind == "symptom" else "present"
         experiencer = data.pop("experiencer") if kind == "symptom" else "patient"
         temporality = data.pop("temporality") if kind == "symptom" else "current"
-        entities.append(ExtractedEntity(type=kind, value=data, evidence_span=span,
-            polarity=polarity, experiencer=experiencer, temporality=temporality))
-    return FreeTextExtraction(message_id=request.message_id, patient_id=request.patient_id,
-        timestamp=request.timestamp, original_text=request.text, entities=tuple(entities),
-        unknown_fields=tuple(output.unknown_fields), model_version=f"{model_version}:{PROMPT_VERSION}")
+        entities.append(
+            ExtractedEntity(
+                type=kind,
+                value=data,
+                evidence_span=span,
+                polarity=polarity,
+                experiencer=experiencer,
+                temporality=temporality,
+            )
+        )
+    return FreeTextExtraction(
+        message_id=request.message_id,
+        patient_id=request.patient_id,
+        timestamp=request.timestamp,
+        original_text=request.text,
+        entities=tuple(entities),
+        unknown_fields=tuple(output.unknown_fields),
+        model_version=f"{model_version}:{PROMPT_VERSION}",
+    )

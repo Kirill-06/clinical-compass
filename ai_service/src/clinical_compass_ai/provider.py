@@ -3,7 +3,7 @@ from typing import Protocol
 import httpx
 
 from clinical_compass_ai.config import Settings
-from clinical_compass_ai.prompts import SYSTEM_PROMPT
+from clinical_compass_ai.prompts import REPAIR_PROMPT, SYSTEM_PROMPT
 from clinical_compass_ai.schemas import ModelOutput
 
 
@@ -25,7 +25,6 @@ class OpenAICompatibleProvider:
     def complete(self, text: str, repair_error: str | None = None) -> str:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": text}]
         if repair_error:
-            from clinical_compass_ai.prompts import REPAIR_PROMPT
             messages.append({"role": "user", "content": REPAIR_PROMPT + repair_error})
         try:
             response = httpx.post(

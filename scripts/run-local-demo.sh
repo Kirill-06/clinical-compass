@@ -24,6 +24,10 @@ if [[ -n "${SSL_CERT_FILE:-}" && ! -r "$SSL_CERT_FILE" ]]; then
   echo 'Файл SSL_CERT_FILE недоступен для чтения.' >&2
   exit 1
 fi
+if ! command -v openssl >/dev/null 2>&1; then
+  echo 'Для общего токена сервисов нужен openssl.' >&2
+  exit 1
+fi
 if ! command -v curl >/dev/null 2>&1; then
   echo 'Для проверки сервисов нужен curl.' >&2
   exit 1
@@ -31,8 +35,17 @@ fi
 
 cp "$repo_root/web/mis-demo.html" "$web_dir/mis-demo.html"
 log_dir="$(mktemp -d)"
+# Общий токен: AI service принимает запросы только от этого backend.
+service_token="$(openssl rand -hex 24)"
 ai_pid=''
 backend_pid=''
+show_logs() {
+  for log in "$log_dir"/*.log; do
+    [[ -s "$log" ]] || continue
+    echo "--- последние строки $(basename "$log") ---" >&2
+    tail -n 20 "$log" >&2
+  done
+}
 cleanup() {
   trap - EXIT INT TERM
   [[ -z "$backend_pid" ]] || kill "$backend_pid" 2>/dev/null || true
@@ -48,6 +61,8 @@ trap 'exit 143' TERM
 (
   cd "$repo_root/ai_service"
   export AI_MODEL=GigaChat-3-Ultra
+  export AI_SERVICE_TOKEN="$service_token"
+  export PYTHONPATH="src:../backend/src"
   exec uv run uvicorn clinical_compass_ai.main:app --host 127.0.0.1 --port 8090
 ) >"$log_dir/ai.log" 2>&1 &
 ai_pid=$!
@@ -62,6 +77,7 @@ wait_for_health() {
     sleep 1
   done
   echo "$name не запустился. Проверьте зависимости, настройки и доступность портов." >&2
+  show_logs
   return 1
 }
 wait_for_health 'AI service' 'http://127.0.0.1:8090/health' "$ai_pid"
@@ -71,6 +87,8 @@ wait_for_health 'AI service' 'http://127.0.0.1:8090/health' "$ai_pid"
   export CC_WEB_DIR="$web_dir"
   export CC_EXTRACTOR_MODE=remote
   export CC_EXTRACTOR_URL=http://127.0.0.1:8090/extract
+  export CC_EXTRACTOR_TOKEN="$service_token"
+  export PYTHONPATH=src
   exec uv run clinical-compass serve --host 127.0.0.1 --port 8080
 ) >"$log_dir/backend.log" 2>&1 &
 backend_pid=$!
@@ -79,4 +97,5 @@ wait_for_health 'Backend' 'http://127.0.0.1:8080/health' "$backend_pid"
 printf '%s\n' 'http://127.0.0.1:8080/' 'http://127.0.0.1:8080/mis-demo.html'
 while kill -0 "$ai_pid" 2>/dev/null && kill -0 "$backend_pid" 2>/dev/null; do sleep 1; done
 echo 'Один из сервисов завершился. Перезапустите стенд после проверки настроек.' >&2
+show_logs
 exit 1

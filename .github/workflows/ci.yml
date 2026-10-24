@@ -38,6 +38,22 @@ jobs:
           uv run clinical-compass check-contracts
           uv run clinical-compass seed
 
+  ai_service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai_service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy
+      - run: uv run pytest
+
   flutter:
     runs-on: ubuntu-latest
     steps:
@@ -56,7 +72,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: [backend, flutter]
+    needs: [backend, ai_service, flutter]
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t clinical-compass:ci .

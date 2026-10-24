@@ -1,3 +1,5 @@
+"""Настройки сервиса (переменные окружения с префиксом `AI_`)."""
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +11,10 @@ class Settings(BaseSettings):
     api_key: str | None = None
     base_url: str = "https://api.openai.com/v1"
     timeout_seconds: float = Field(default=15.0, gt=0, le=120)
+    service_token: str | None = Field(default=None, min_length=16)
+    """Если задан, `/extract` требует `Authorization: Bearer <token>`.
+
+    Тот же токен backend передаёт из `CC_EXTRACTOR_TOKEN`."""
 
     def require_provider(self) -> None:
         if not self.model or not self.api_key:

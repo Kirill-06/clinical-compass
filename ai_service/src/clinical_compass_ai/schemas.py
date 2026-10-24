@@ -1,5 +1,13 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    StrictStr,
+)
 
 from clinical_compass.domain.enums import (
     Experiencer,
@@ -11,13 +19,6 @@ from clinical_compass.domain.enums import (
     SymptomType,
     Temporality,
     Tri,
-)
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    StrictInt,
-    StrictStr,
 )
 
 
@@ -57,7 +58,7 @@ class Risk(StrictModel):
     entity_type: Literal["risk_signal"]
     type: RiskSignalType
     evidence_span: Evidence
-    value: str | dict | None = None
+    value: str | dict[str, Any] | None = None
 
 
 class Lab(StrictModel):
