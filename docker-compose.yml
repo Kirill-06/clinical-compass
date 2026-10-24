@@ -28,7 +28,8 @@ services:
     environment:
       CC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-clinical_compass}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-clinical_compass}
     ports:
-      - "${APP_PORT:-8080}:8080"
+      # Только localhost: наружу сервис выходит через обратный прокси (Caddy, nginx).
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
     volumes:
       - files:/data/files
     restart: unless-stopped
