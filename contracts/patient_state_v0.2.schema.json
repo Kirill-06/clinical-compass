@@ -118,7 +118,7 @@
         "drug": {"type": "string"},
         "dose_mg": {"type": ["number", "null"]},
         "slot_date": {"type": "string", "format": "date"},
-        "slot": {"enum": ["morning", "evening"]},
+        "slot": {"enum": ["morning", "evening", "unknown"]},
         "status": {"enum": ["taken", "missed", "unknown"]},
         "missed_reason": {"enum": ["forgot", "adverse_event", "felt_unwell", "ran_out", "decided_to_stop", "other", "unknown"]},
         "marked_at": {"type": ["string", "null"], "format": "date-time"},

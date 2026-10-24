@@ -57,3 +57,9 @@ backend/data/
 
 # Local tool configuration
 .claude/
+
+# Local evaluation outputs
+evaluation/out/
+
+# Local evaluation runs
+evaluation/out_gigachat_*/

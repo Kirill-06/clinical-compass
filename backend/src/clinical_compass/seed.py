@@ -288,7 +288,7 @@ def _history(
             (at(spec.start_offset + day, 10, 25), partial(_questionnaire, Instrument.PHQ9, answers))
         )
     for back in range(-spec.start_offset, 0, -1):
-        for slot in IntakeSlot:
+        for slot in (IntakeSlot.MORNING, IntakeSlot.EVENING):
             if (back, slot) in spec.unmarked:
                 continue
             hour = 9 if slot is IntakeSlot.MORNING else 21
