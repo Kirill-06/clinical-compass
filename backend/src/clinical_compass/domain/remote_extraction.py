@@ -54,16 +54,18 @@ class RemoteHTTPExtractor:
         if not isinstance(document, dict):
             raise RemoteExtractionError("AI extractor response must be a JSON object")
 
-        # The remote service may omit transport metadata that the backend already knows.
+        # Транспортные поля знает backend, и ответ сервиса их не переопределяет:
+        # иначе ошибка модели могла бы привязать факты к чужому пациенту или сообщению.
+        # Версию модели и сущности сообщает сервис.
         merged = {
-            "message_id": message_id,
-            "patient_id": patient_id,
-            "timestamp": timestamp.isoformat(),
             "channel": "chat",
-            "original_text": text,
             "model_version": self.version,
             "schema_version": "0.2.0",
             **document,
+            "message_id": message_id,
+            "patient_id": patient_id,
+            "timestamp": timestamp.isoformat(),
+            "original_text": text,
         }
         try:
             return FreeTextExtraction.model_validate(merged)

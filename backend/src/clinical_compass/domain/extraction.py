@@ -73,21 +73,159 @@ class ExtractedFacts:
     medication_intakes: tuple[MedicationIntake, ...]
 
 
-def _medication_slot_date(entity: ExtractedEntity, timestamp: datetime) -> date | None:
-    """Resolve an intake date only when it is deterministic from the text."""
-    raw_date = entity.value.get("slot_date")
-    if isinstance(raw_date, str):
-        try:
-            return date.fromisoformat(raw_date)
-        except ValueError:
-            pass
+@dataclass(frozen=True)
+class IntakeWindow:
+    """Какие даты приёма можно взять из текста: по календарю клиники, не в будущем
+    и не раньше, чем пациент может отметить приём вручную."""
 
-    text = entity.evidence_span.text.lower().replace("ё", "е")
-    if "вчера" in text:
-        return timestamp.date() - timedelta(days=1)
-    if "сегодня" in text:
-        return timestamp.date()
-    return None
+    today: date
+    backfill_days: int = 2
+
+    @classmethod
+    def for_message(
+        cls, timestamp: datetime, *, utc_offset_hours: int = 0, backfill_days: int = 2
+    ) -> "IntakeWindow":
+        local_day = (timestamp + timedelta(hours=utc_offset_hours)).date()
+        return cls(today=local_day, backfill_days=backfill_days)
+
+    def contains(self, day: date) -> bool:
+        return self.today - timedelta(days=self.backfill_days) <= day <= self.today
+
+
+def facts_from_extraction(
+    extraction: FreeTextExtraction,
+    new_id: Callable[[str], str],
+    *,
+    window: IntakeWindow | None = None,
+) -> ExtractedFacts:
+    """Сущности извлечения → факты Patient State.
+
+    Отрицание, опыт другого человека и гипотетические упоминания фактами не становятся.
+    Непригодная сущность (неизвестный код, неверный тип поля) пропускается:
+    одна ошибка модели не отменяет остальные факты сообщения.
+    """
+    window = window or IntakeWindow.for_message(extraction.timestamp)
+    source = (
+        FactSource.TEXT_LEXICON
+        if extraction.model_version.startswith("mock-lexicon")
+        else FactSource.TEXT_LLM
+    )
+    symptoms: list[SymptomEvent] = []
+    risks: list[RiskSignal] = []
+    intakes: list[MedicationIntake] = []
+    for entity in extraction.entities:
+        if not _is_current_patient_fact(entity):
+            continue
+        try:
+            if entity.type == "risk_signal":
+                risks.append(_risk_signal(entity, source, extraction.timestamp, new_id))
+            elif entity.type == "symptom":
+                symptoms.append(_symptom(entity, source, new_id))
+            elif entity.type == "medication" and (
+                intake := _medication_intake(entity, source, extraction.timestamp, window, new_id)
+            ):
+                intakes.append(intake)
+        except (KeyError, ValueError):
+            continue
+    return ExtractedFacts(
+        symptoms=tuple(_without_allergy_duplicates(symptoms, risks)),
+        risk_signals=tuple(risks),
+        medication_intakes=tuple(intakes),
+    )
+
+
+def _is_current_patient_fact(entity: ExtractedEntity) -> bool:
+    return (
+        entity.polarity is Polarity.PRESENT
+        and entity.experiencer is Experiencer.PATIENT
+        and entity.temporality is not Temporality.HYPOTHETICAL
+    )
+
+
+def _risk_signal(
+    entity: ExtractedEntity, source: FactSource, at: datetime, new_id: Callable[[str], str]
+) -> RiskSignal:
+    return RiskSignal(
+        id=new_id("risk"),
+        type=RiskSignalType(entity.value["type"]),
+        evidence_span=entity.evidence_span,
+        source=source,
+        confirmation=Confirmation.PENDING,
+        created_at=at,
+    )
+
+
+def _symptom(entity: ExtractedEntity, source: FactSource, new_id: Callable[[str], str]) -> SymptomEvent:
+    return SymptomEvent(
+        id=new_id("sym"),
+        normalized_type=SymptomType(entity.value["normalized_type"]),
+        patient_phrase=entity.evidence_span.text,
+        evidence_span=entity.evidence_span,
+        polarity=entity.polarity,
+        experiencer=entity.experiencer,
+        temporality=entity.temporality,
+        affects_daily_life=Tri(entity.value.get("affects_daily_life", Tri.UNKNOWN)),
+        source=source,
+        confirmation=Confirmation.PENDING,
+    )
+
+
+def _medication_intake(
+    entity: ExtractedEntity,
+    source: FactSource,
+    at: datetime,
+    window: IntakeWindow,
+    new_id: Callable[[str], str],
+) -> MedicationIntake | None:
+    """Отметка приёма из текста — только если дата, слот и статус однозначны."""
+    slot_date = _slot_date(entity, window)
+    status_raw, slot_raw = entity.value.get("status"), entity.value.get("slot")
+    if slot_date is None or status_raw not in {"taken", "missed"} or slot_raw not in {"morning", "evening"}:
+        return None
+    status = IntakeStatus(status_raw)
+    return MedicationIntake(
+        id=new_id("intake"),
+        drug=_drug_name(entity.value.get("drug")),
+        dose_mg=_dose_mg(entity.value.get("dose_mg")),
+        slot_date=slot_date,
+        slot=IntakeSlot(slot_raw),
+        status=status,
+        missed_reason=_missed_reason(entity.value.get("missed_reason"))
+        if status is IntakeStatus.MISSED
+        else None,
+        marked_at=at,
+        source=source,
+        confirmation=Confirmation.PENDING,
+    )
+
+
+def _slot_date(entity: ExtractedEntity, window: IntakeWindow) -> date | None:
+    """Дата из ответа модели или из слов «сегодня»/«вчера» — только внутри окна отметок."""
+    raw = entity.value.get("slot_date")
+    day: date | None = None
+    if isinstance(raw, str):
+        try:
+            day = date.fromisoformat(raw)
+        except ValueError:
+            day = None
+    if day is None:
+        text = entity.evidence_span.text.lower().replace("ё", "е")
+        if "вчера" in text:
+            day = window.today - timedelta(days=1)
+        elif "сегодня" in text:
+            day = window.today
+    return day if day is not None and window.contains(day) else None
+
+
+def _missed_reason(raw: Any) -> MissedReason:
+    try:
+        return MissedReason(raw)
+    except ValueError:
+        return MissedReason.UNKNOWN
+
+
+def _drug_name(raw: Any) -> str | None:
+    return raw.strip() if isinstance(raw, str) and raw.strip() and raw != "unknown" else None
 
 
 def _dose_mg(raw: Any) -> float | None:
@@ -97,114 +235,21 @@ def _dose_mg(raw: Any) -> float | None:
     return float(raw) if raw > 0 else None
 
 
-def facts_from_extraction(extraction: FreeTextExtraction, new_id: Callable[[str], str]) -> ExtractedFacts:
-    """Сущности извлечения → факты Patient State.
-
-    Отрицание, опыт другого человека и гипотетические упоминания фактами не становятся.
-    """
-    source = (
-        FactSource.TEXT_LEXICON
-        if extraction.model_version.startswith("mock-lexicon")
-        else FactSource.TEXT_LLM
-    )
-    symptoms: list[SymptomEvent] = []
-    risks: list[RiskSignal] = []
-    medication_intakes: list[MedicationIntake] = []
-    for e in extraction.entities:
-        if e.polarity is not Polarity.PRESENT or e.experiencer is not Experiencer.PATIENT:
-            continue
-        if e.temporality is Temporality.HYPOTHETICAL:
-            continue
-        if e.type == "risk_signal":
-            risks.append(
-                RiskSignal(
-                    id=new_id("risk"),
-                    type=RiskSignalType(e.value["type"]),
-                    evidence_span=e.evidence_span,
-                    source=source,
-                    confirmation=Confirmation.PENDING,
-                    created_at=extraction.timestamp,
-                )
-            )
-        elif e.type == "symptom":
-            symptoms.append(
-                SymptomEvent(
-                    id=new_id("sym"),
-                    normalized_type=SymptomType(e.value["normalized_type"]),
-                    patient_phrase=e.evidence_span.text,
-                    evidence_span=e.evidence_span,
-                    polarity=e.polarity,
-                    experiencer=e.experiencer,
-                    temporality=e.temporality,
-                    affects_daily_life=Tri(e.value.get("affects_daily_life", Tri.UNKNOWN)),
-                    source=source,
-                    confirmation=Confirmation.PENDING,
-                )
-            )
-        elif e.type == "medication":
-            slot_date = _medication_slot_date(e, extraction.timestamp)
-            status_raw = e.value.get("status")
-            slot_raw = e.value.get("slot")
-
-            if (
-                slot_date is None
-                or status_raw not in {"taken", "missed"}
-                or slot_raw not in {"morning", "evening"}
-            ):
-                continue
-
-            status = IntakeStatus(status_raw)
-            missed_reason = None
-            if status is IntakeStatus.MISSED:
-                reason_raw = e.value.get("missed_reason", "unknown")
-                try:
-                    missed_reason = MissedReason(reason_raw)
-                except ValueError:
-                    missed_reason = MissedReason.UNKNOWN
-
-            drug = e.value.get("drug")
-            if not isinstance(drug, str) or not drug.strip() or drug == "unknown":
-                drug = None
-
-            medication_intakes.append(
-                MedicationIntake(
-                    id=new_id("intake"),
-                    drug=drug,
-                    dose_mg=_dose_mg(e.value.get("dose_mg")),
-                    slot_date=slot_date,
-                    slot=IntakeSlot(slot_raw),
-                    status=status,
-                    missed_reason=missed_reason,
-                    marked_at=extraction.timestamp,
-                    source=source,
-                    confirmation=Confirmation.PENDING,
-                )
-            )
-
+def _without_allergy_duplicates(symptoms: list[SymptomEvent], risks: list[RiskSignal]) -> list[SymptomEvent]:
+    """«Другой симптом» внутри фрагмента об аллергической реакции — тот же факт, не второй алерт."""
     allergy_spans = [
-        risk.evidence_span for risk in risks if risk.type is RiskSignalType.POSSIBLE_ALLERGIC_REACTION
+        r.evidence_span
+        for r in risks
+        if r.type is RiskSignalType.POSSIBLE_ALLERGIC_REACTION and r.evidence_span is not None
     ]
-    if allergy_spans:
-        symptoms = [
-            symptom
-            for symptom in symptoms
-            if not (
-                symptom.normalized_type is SymptomType.OTHER_UNLISTED
-                and any(
-                    span is not None
-                    and (symptom_span := symptom.evidence_span) is not None
-                    and symptom_span.start >= span.start
-                    and symptom_span.end <= span.end
-                    for span in allergy_spans
-                )
-            )
-        ]
 
-    return ExtractedFacts(
-        symptoms=tuple(symptoms),
-        risk_signals=tuple(risks),
-        medication_intakes=tuple(medication_intakes),
-    )
+    def inside_allergy(symptom: SymptomEvent) -> bool:
+        span = symptom.evidence_span
+        return span is not None and any(a.start <= span.start and span.end <= a.end for a in allergy_spans)
+
+    return [
+        s for s in symptoms if not (s.normalized_type is SymptomType.OTHER_UNLISTED and inside_allergy(s))
+    ]
 
 
 _PATTERNS: dict[RiskSignalType, tuple[str, ...]] = {

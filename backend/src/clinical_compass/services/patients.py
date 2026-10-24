@@ -25,7 +25,12 @@ from clinical_compass.domain.enums import (
     Temporality,
     Tri,
 )
-from clinical_compass.domain.extraction import FreeTextExtraction, MockLexiconExtractor, facts_from_extraction
+from clinical_compass.domain.extraction import (
+    FreeTextExtraction,
+    IntakeWindow,
+    MockLexiconExtractor,
+    facts_from_extraction,
+)
 from clinical_compass.domain.instruments import ScoringError, score_items
 from clinical_compass.domain.state import LabResult, MedicationIntake, QuestionnaireResponse, SymptomEvent
 from clinical_compass.services.access import AccessPolicy
@@ -309,7 +314,12 @@ class PatientService:
         Сначала разбирается весь ответ модели и только потом что-либо пишется:
         если ответ не разбирается, в базе не остаётся половины фактов.
         """
-        facts = facts_from_extraction(extraction, new_id)
+        window = IntakeWindow.for_message(
+            extraction.timestamp,
+            utc_offset_hours=self._d.clock.utc_offset_hours,
+            backfill_days=self._d.limits.intake_backfill_days,
+        )
+        facts = facts_from_extraction(extraction, new_id, window=window)
         self._d.repos.messages.add(
             ExtractionRow(
                 message_id=extraction.message_id,
