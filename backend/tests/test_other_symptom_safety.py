@@ -14,9 +14,15 @@ MIXED = "Я выпила всю пачку таблеток, заберемен�
 
 
 def report(api: Api, phrase: str) -> dict:
-    status, body = api.call("POST", "/patients/p_a1/symptoms", as_="p_a1", body={
-        "normalized_type": "other_unlisted", "patient_phrase": phrase,
-    })
+    status, body = api.call(
+        "POST",
+        "/patients/p_a1/symptoms",
+        as_="p_a1",
+        body={
+            "normalized_type": "other_unlisted",
+            "patient_phrase": phrase,
+        },
+    )
     assert status == 201
     assert body["symptom"]["normalized_type"] == "other_unlisted"
     return body
@@ -46,7 +52,9 @@ def test_other_text_self_harm_is_urgent(api: Api) -> None:
 def test_mixed_critical_text_extracts_all_risks(api: Api) -> None:
     body = report(api, MIXED)
     assert {r["type"] for r in state(api)["risk_signals"]} == {
-        "possible_overdose", "pregnancy_or_lactation", "self_harm_or_suicidal",
+        "possible_overdose",
+        "pregnancy_or_lactation",
+        "self_harm_or_suicidal",
     }
     assert find_alert(api.queue("doc_a"), "R_SELF_HARM", "p_a1")["alert"]["doctor_priority"] == "urgent"
     assert find_alert(api.queue("doc_a"), "R_OVERDOSE", "p_a1")["alert"]["doctor_priority"] == "urgent"
@@ -89,15 +97,24 @@ class MixedEntityExtractor:
         self, *, message_id: str, patient_id: str, timestamp: datetime, text: str
     ) -> FreeTextExtraction:
         def entity(kind: str, value: dict[str, str]) -> ExtractedEntity:
-            return ExtractedEntity.model_validate({
-                "type": kind, "value": value,
-                "evidence_span": EvidenceSpan(start=0, end=len(text), text=text),
-                "polarity": "present", "experiencer": "patient", "temporality": "current",
-            })
+            return ExtractedEntity.model_validate(
+                {
+                    "type": kind,
+                    "value": value,
+                    "evidence_span": EvidenceSpan(start=0, end=len(text), text=text),
+                    "polarity": "present",
+                    "experiencer": "patient",
+                    "temporality": "current",
+                }
+            )
 
         return FreeTextExtraction(
-            message_id=message_id, patient_id=patient_id, timestamp=timestamp,
-            original_text=text, model_version="test-llm", entities=(
+            message_id=message_id,
+            patient_id=patient_id,
+            timestamp=timestamp,
+            original_text=text,
+            model_version="test-llm",
+            entities=(
                 entity("risk_signal", {"type": "self_harm_or_suicidal"}),
                 entity("symptom", {"normalized_type": "dizziness"}),
                 entity("medication", {"slot": "morning", "status": "missed", "slot_date": "2026-10-21"}),
