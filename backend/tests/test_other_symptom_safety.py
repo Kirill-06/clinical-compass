@@ -1,6 +1,7 @@
 """Regression coverage for free form 'other' symptoms."""
 
 from datetime import datetime
+from typing import Any, cast
 
 import pytest
 
@@ -13,7 +14,7 @@ SELF_HARM = "Последние дни не хочу жить"
 MIXED = "Я выпила всю пачку таблеток, забеременела, и меня посещают суицидальные мысли"
 
 
-def report(api: Api, phrase: str) -> dict:
+def report(api: Api, phrase: str) -> dict[str, Any]:
     status, body = api.call(
         "POST",
         "/patients/p_a1/symptoms",
@@ -25,13 +26,13 @@ def report(api: Api, phrase: str) -> dict:
     )
     assert status == 201
     assert body["symptom"]["normalized_type"] == "other_unlisted"
-    return body
+    return cast(dict[str, Any], body)
 
 
-def state(api: Api) -> dict:
+def state(api: Api) -> dict[str, Any]:
     status, body = api.call("GET", "/patients/p_a1/state", as_="doc_a")
     assert status == 200
-    return body["patient_state"]
+    return cast(dict[str, Any], body["patient_state"])
 
 
 def test_benign_other_text_stays_out_of_scope(api: Api) -> None:
