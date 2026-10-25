@@ -264,11 +264,18 @@ _PATTERNS: dict[RiskSignalType, tuple[str, ...]] = {
         "самоубийств",
     ),
     RiskSignalType.POSSIBLE_OVERDOSE: (
+        "выпила всю пачку таблеток",
+        "выпил всю пачку таблеток",
         "выпил много таблеток",
         "выпила много таблеток",
         "принял лишнюю",
         "приняла лишнюю",
         "передозиров",
+    ),
+    RiskSignalType.PREGNANCY_OR_LACTATION: (
+        "забеременела",
+        "беременна",
+        "кормлю грудью",
     ),
     RiskSignalType.POSSIBLE_ALLERGIC_REACTION: (
         "отек лица",

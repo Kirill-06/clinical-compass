@@ -237,8 +237,38 @@ class PatientService:
         )
         self._d.repos.facts.add_symptom(patient_id, symptom, self._d.clock.now())
         self._d.audit(principal, "symptom.reported", "symptom", symptom.id, patient_id)
+        if report.type is SymptomType.OTHER_UNLISTED and phrase:
+            self._extract_symptom_risks(principal, patient_id, symptom.id, phrase)
         alerts = self._state.evaluate(patient_id, principal)
         return {"symptom": symptom.to_schema(), "patient_notices": self._present.notices(alerts)}
+
+    def _extract_symptom_risks(
+        self, principal: Principal, patient_id: str, symptom_id: str, text: str
+    ) -> None:
+        """Check free form symptom text for risks without creating duplicate AI facts."""
+        now = self._d.clock.now()
+        try:
+            extraction = self._d.extractor.extract(
+                message_id=symptom_id, patient_id=patient_id, timestamp=now, text=text
+            )
+        except Exception as exc:
+            logger.warning("Извлечение рисков из симптома %s не удалось: %s", symptom_id, exc)
+            if isinstance(self._d.extractor, MockLexiconExtractor):
+                return
+            extraction = _SAFETY_NET.extract(
+                message_id=symptom_id, patient_id=patient_id, timestamp=now, text=text
+            )
+        self._save_symptom_risks(principal, patient_id, extraction)
+
+    def _save_symptom_risks(
+        self, principal: Principal, patient_id: str, extraction: FreeTextExtraction
+    ) -> None:
+        risk_only = extraction.model_copy(
+            update={"entities": tuple(e for e in extraction.entities if e.type == "risk_signal")}
+        )
+        for signal in facts_from_extraction(risk_only, new_id).risk_signals:
+            self._d.repos.facts.add_risk_signal(patient_id, signal)
+            self._d.audit(principal, "risk_signal.extracted", "risk_signal", signal.id, patient_id)
 
     def send_message(
         self, principal: Principal, patient_id: str, text: str | None, files: list[Upload]
