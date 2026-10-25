@@ -161,12 +161,22 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = asJson(row['patient']);
+    final unread = row['unread_messages'] as int? ?? 0;
     final cells = <Widget>[
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(p['full_name']! as String, style: AppType.bodyStrong, maxLines: 2, overflow: TextOverflow.ellipsis),
           Text('${p['display_id']} · ${p['birth_year']} г. р.', style: AppType.numericSmall),
+          if (unread > 0) ...[
+            const SizedBox(height: Space.x1),
+            StatusBadge(
+              label: 'Новых сообщений: $unread',
+              tone: StatusTone.accent,
+              icon: Icons.mark_chat_unread_outlined,
+              dense: true,
+            ),
+          ],
         ],
       ),
       _Score(data: row['GAD7'] is Map ? asJson(row['GAD7']) : null),

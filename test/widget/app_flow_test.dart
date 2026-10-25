@@ -14,6 +14,15 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await settle(tester);
 }
 
+/// Кнопка-иконка на узком экране: ищется по всплывающей подсказке.
+Future<void> tapTooltip(WidgetTester tester, String tooltip) async {
+  final f = find.byTooltip(tooltip).last;
+  await tester.ensureVisible(f);
+  await tester.pump();
+  await tester.tap(f);
+  await settle(tester);
+}
+
 Future<void> switchTo(WidgetTester tester, String name) async {
   await tester.tap(find.byType(DemoAccountButton).first);
   await settle(tester);
@@ -109,13 +118,37 @@ void main() {
     await tapText(tester, 'Корнилова Елена Андреевна');
     await tapText(tester, 'Написать врачу или приложить файл');
     await tester.enterText(find.byType(TextField).first, 'Последние дни не хочу жить');
-    await tapText(tester, 'Отправить врачу');
+    await tapTooltip(tester, 'Отправить врачу');
     expect(find.text('Нужна срочная помощь?'), findsOneWidget);
-    // Кнопка есть и на выезжающем экране, и в карточке уведомления под ним.
-    expect(find.text('Позвонить 112'), findsNWidgets(2));
+    // Экстренное предупреждение показывает только выезжающий экран: чат его не дублирует.
+    expect(find.text('Позвонить 112'), findsOneWidget);
     expect(find.text('Скорая помощь — 103'), findsOneWidget);
     await tapText(tester, 'Я в безопасности, закрыть');
     expect(find.text('Нужна срочная помощь?'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('doctor reply reaches the patient chat', (tester) async {
+    await pumpApp(tester);
+    await tapText(tester, 'Миронова Анна Сергеевна');
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/doctor/patients/p_a1');
+    await settle(tester);
+    await tapText(tester, 'Чат и файлы (0)');
+    await tester.enterText(find.widgetWithText(TextField, 'Ответ пациенту'), 'Как вы спите последние дни?');
+    await tapText(tester, 'Ответить');
+    // Сообщение ушло: поле очистилось, текст остался только в ленте.
+    expect(find.widgetWithText(SelectableText, 'Как вы спите последние дни?'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(390, 844);
+    await settle(tester);
+    await switchTo(tester, 'Корнилова Елена Андреевна');
+    expect(find.text('Новых ответов врача: 1'), findsOneWidget);
+    await tapText(tester, 'Врач');
+    expect(find.text('Чат с врачом'), findsOneWidget);
+    expect(find.widgetWithText(SelectableText, 'Как вы спите последние дни?'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Сообщение врачу'), 'Лучше, спасибо');
+    await tapTooltip(tester, 'Отправить врачу');
+    expect(find.widgetWithText(SelectableText, 'Лучше, спасибо'), findsOneWidget);
     await unmount(tester);
   });
 

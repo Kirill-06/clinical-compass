@@ -78,7 +78,7 @@ class _SlotRowState extends State<_SlotRow> {
         reason: reason,
       );
       final notices = [for (final n in (r['patient_notices'] as List? ?? const [])) asJson(n)];
-      if (notices.isNotEmpty && mounted) await _showNotices(context, notices);
+      if (notices.isNotEmpty && mounted) await showNoticesSheet(context, notices);
     } on Exception catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Отметка не сохранена: ${describeError(e)}')));
     } finally {
@@ -193,23 +193,6 @@ Future<MissedReason?> _askReason(BuildContext context) => showModalBottomSheet<M
                 child: Text(ctx.meta.missedReason(r)),
               ),
             ),
-        ],
-      ),
-    ),
-  ),
-);
-
-Future<void> _showNotices(BuildContext context, List<Json> notices) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  builder: (ctx) => SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(Space.x4, 0, Space.x4, Space.x4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          NoticeList(notices: notices),
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Понятно')),
         ],
       ),
     ),

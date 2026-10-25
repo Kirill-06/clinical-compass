@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:clinical_compass/core/time/clock.dart';
 import 'package:clinical_compass/data/api_client.dart';
+import 'package:clinical_compass/data/realtime.dart';
 import 'package:clinical_compass/domain/meta.dart';
 
-/// Корень зависимостей: клиент API и часы (для подписей «сегодня/вчера»).
+/// Корень зависимостей: клиент API, доставка событий и часы (для подписей «сегодня/вчера»).
 class AppServices {
-  AppServices({required this.api, this.clock = const SystemClock()});
+  AppServices({required this.api, this.clock = const SystemClock()}) : realtime = RealtimeLink(api) {
+    // Вход, выход и смена аккаунта — переподключить Centrifugo под нового пользователя.
+    api.addListener(() => unawaited(realtime.syncWithSession()));
+  }
 
   /// Адрес backend задаётся при сборке: `--dart-define=CC_API_BASE_URL=...`.
   /// В web без явного адреса используется тот же origin, с которого открыто
@@ -24,6 +30,7 @@ class AppServices {
 
   final ApiClient api;
   final Clock clock;
+  final RealtimeLink realtime;
 }
 
 /// Подписка на клиента API: экраны перестраиваются при входе/выходе и

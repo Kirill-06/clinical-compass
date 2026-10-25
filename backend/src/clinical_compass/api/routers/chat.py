@@ -18,8 +18,14 @@ _CONNECTION_TOKEN_TTL = timedelta(hours=1)
 
 @router.get("/patients/{patient_id}/chat")
 def thread(patient_id: str, deps: DepsDep, principal: PrincipalDep) -> Json:
-    """Переписка по порядку; сообщения собеседника отмечаются прочитанными."""
+    """Переписка по порядку. Только чтение."""
     return ChatService(deps).thread(principal, patient_id)
+
+
+@router.post("/patients/{patient_id}/chat/read")
+def mark_read(patient_id: str, deps: DepsDep, principal: PrincipalDep) -> Json:
+    """Сообщения собеседника прочитаны: переписка открыта на экране."""
+    return ChatService(deps).mark_read(principal, patient_id)
 
 
 @router.post("/doctor/patients/{patient_id}/messages", status_code=status.HTTP_201_CREATED)

@@ -50,7 +50,17 @@ make check
 | Разбор альтернатив (автовызов, обратный звонок, доверенное лицо) | [EMERGENCY.md](EMERGENCY.md) |
 | Тесты | `test_integrations.py::test_emergency_notice_and_patient_actions_reach_the_doctor`, виджет-тест `red-flag message slides in the emergency screen` |
 
-## 4. AI-извлечение из свободного текста
+## 4. Чат пациента и врача в реальном времени
+
+| Что | Где |
+|---|---|
+| На стенде | Пациент → вкладка «Врач» → сообщение; врач → карточка пациента → «Чат и файлы» → ответ. Ответ появляется у пациента без перезагрузки, «Сообщения приходят сразу» |
+| Сообщения, «прочитано», ответ врача | `backend/src/clinical_compass/services/chat.py`, роутер `api/routers/chat.py` |
+| Доставка через Centrifugo: каналы в подписанном токене, публикация после коммита | `backend/src/clinical_compass/services/realtime.py`, `api/deps.py::get_deps` |
+| Клиент WebSocket и экраны | `lib/data/realtime.dart`, `lib/presentation/chat/`, `lib/presentation/patient/patient_chat_screen.dart` |
+| Тесты | `backend/tests/test_chat.py`, виджет-тест `doctor reply reaches the patient chat` |
+
+## 5. AI-извлечение из свободного текста
 
 | Что | Где |
 |---|---|
@@ -61,16 +71,16 @@ make check
 | Оценка качества: 155 сообщений, risk recall 0.842 | `evaluation/final_model_report.md` |
 | Тесты | `ai_service/tests/` (39), `backend/tests/test_extraction_resilience.py`, `test_remote_extraction.py`, `test_medication_extraction.py` |
 
-## 5. Поддерживаемость и качество кода
+## 6. Поддерживаемость и качество кода
 
 - **Слои с зависимостями сверху вниз:** `api → services → repositories → db`; `domain` — чистая логика без БД и HTTP. Подробно — [backend/README.md](../backend/README.md).
 - **Контракты как данные:** правила, шаблоны текстов, шкалы и справочники лежат в `contracts/` и проверяются при старте (`clinical-compass check-contracts`); приложение получает их через `GET /meta`, тексты не дублируются в коде.
 - **Статическая проверка:** ruff (строгий набор правил) и `mypy --strict` для backend и AI-сервиса, `flutter analyze` — в CI на каждый PR.
-- **Тесты:** backend 96, AI-сервис 39, Flutter 19 — UI-тесты работают поверх настоящего Python-backend, а не моков.
+- **Тесты:** backend 110, AI-сервис 39, Flutter 20 — UI-тесты работают поверх настоящего Python-backend, а не моков.
 - **Миграции БД:** Alembic, `backend/src/clinical_compass/db/alembic/versions/`.
 - **Решения и открытые вопросы:** [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md).
 
-## 6. Развёртывание и безопасность
+## 7. Развёртывание и безопасность
 
 | Что | Где |
 |---|---|

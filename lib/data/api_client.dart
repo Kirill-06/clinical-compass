@@ -287,6 +287,21 @@ class ApiClient extends ChangeNotifier {
 
   Future<Json> patientState(String pid) async => _obj(await _call('GET', '/patients/$pid/state'));
 
+  // -------------------------------------------------------------- chat
+
+  /// Переписка с врачом по порядку; сообщения собеседника отмечаются прочитанными.
+  Future<Json> chat(String pid) async => _obj(await _call('GET', '/patients/$pid/chat'));
+
+  /// Сообщения собеседника прочитаны — переписка на экране. Без оповещения экранов, чтобы не зациклить перезагрузку.
+  Future<void> markChatRead(String pid) async => await _call('POST', '/patients/$pid/chat/read');
+
+  /// Ответ врача пациенту. Пациент пишет через [sendMessage]: там извлечение фактов и экран 112.
+  Future<Json> sendDoctorMessage(String pid, String text) async =>
+      _obj(await _call('POST', '/doctor/patients/$pid/messages', body: {'text': text}, write: true));
+
+  /// Адрес Centrifugo и токен с разрешёнными каналами; `{"enabled": false}`, если не настроен.
+  Future<Json> realtimeConnection() async => _obj(await _call('GET', '/realtime/connection'));
+
   // -------------------------------------------------------------- doctor
 
   Future<List<Json>> doctorPatients() async => _list(await _call('GET', '/doctor/patients'));

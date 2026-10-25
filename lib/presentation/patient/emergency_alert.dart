@@ -210,7 +210,7 @@ class _EmergencyPanelState extends State<_EmergencyPanel> {
                             TextButton.icon(
                               onPressed: () {
                                 _close('message_doctor');
-                                GoRouter.of(context).push('/patient/message');
+                                GoRouter.of(context).go('/patient/chat');
                               },
                               icon: const Icon(Icons.chat_bubble_outline, size: 18),
                               label: const Text('Написать врачу'),

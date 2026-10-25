@@ -101,3 +101,21 @@ class NoticesHeader extends StatelessWidget {
     child: Text('Сообщения о ваших данных', style: AppType.subsectionTitle),
   );
 }
+
+/// Тексты по итогам отправки (кроме экстренных — их показывает EmergencyAlertHost).
+Future<void> showNoticesSheet(BuildContext context, List<Json> notices) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  builder: (ctx) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(Space.x4, 0, Space.x4, Space.x4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NoticeList(notices: notices),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Понятно')),
+        ],
+      ),
+    ),
+  ),
+);

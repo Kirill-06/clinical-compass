@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:clinical_compass/app/app_services.dart';
@@ -11,6 +10,7 @@ import 'package:clinical_compass/core/design/typography.dart';
 import 'package:clinical_compass/core/format/fmt.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/domain/json.dart';
+import 'package:clinical_compass/presentation/doctor/doctor_chat.dart';
 import 'package:clinical_compass/presentation/doctor/doctor_shell.dart';
 import 'package:clinical_compass/presentation/shared/labels.dart';
 import 'package:clinical_compass/presentation/shared/live_future.dart';
@@ -324,7 +324,7 @@ class _DetailTabsState extends State<DetailTabs> with SingleTickerProviderStateM
           isScrollable: true,
           tabs: [
             Tab(text: 'Жалобы и симптомы (${symptoms.length})', height: 44),
-            Tab(text: 'Сообщения и файлы (${messages.length})', height: 44),
+            Tab(text: 'Чат и файлы (${messages.length})', height: 44),
             Tab(text: 'Анализы (${labs.length})', height: 44),
             const Tab(text: 'История', height: 44),
             const Tab(text: 'Patient State', height: 44),
@@ -334,7 +334,7 @@ class _DetailTabsState extends State<DetailTabs> with SingleTickerProviderStateM
         const SizedBox(height: Space.x4),
         switch (_tabs.index) {
           0 => _Symptoms(symptoms: symptoms),
-          1 => _Messages(patientId: pid, messages: messages),
+          1 => DoctorChatPanel(patientId: pid),
           2 => _Labs(labs: labs),
           3 => _Timeline(events: [for (final e in d['timeline']! as List) asJson(e)], now: widget.now),
           4 => _StateView(state: asJson(d['patient_state']), valid: d['schema_valid'] == true),
@@ -412,89 +412,6 @@ class _Symptoms extends StatelessWidget {
     'no' => 'нет',
     _ => 'неизвестно',
   };
-}
-
-class _Messages extends StatelessWidget {
-  const _Messages({required this.patientId, required this.messages});
-
-  final String patientId;
-  final List<Json> messages;
-
-  @override
-  Widget build(BuildContext context) {
-    if (messages.isEmpty) {
-      return const Panel(
-        child: EmptyState(compact: true, icon: Icons.chat_bubble_outline, title: 'Сообщений нет'),
-      );
-    }
-    return Panel(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (i, m) in messages.indexed) ...[
-            if (i > 0) const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(Space.x4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: Space.x2,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(Fmt.dateTime(DateTime.parse(m['created_at']! as String)), style: AppType.caption),
-                      if (m['extraction_status'] != null)
-                        StatusBadge(
-                          label: switch (m['extraction_status']) {
-                            'extracted' => 'Обработано ИИ',
-                            'failed' => 'ИИ недоступен — сообщение сохранено',
-                            'pending' => 'Ожидает обработки',
-                            _ => 'Без текста',
-                          },
-                          tone: m['extraction_status'] == 'failed' ? StatusTone.warn : StatusTone.neutral,
-                          dense: true,
-                        ),
-                    ],
-                  ),
-                  if (m['text'] != null) ...[
-                    const SizedBox(height: Space.x1),
-                    SelectableText(m['text']! as String, style: AppType.body),
-                  ],
-                  for (final q in m['clarifying_questions'] as List? ?? const [])
-                    Text('Уточняющий вопрос пациенту: $q', style: AppType.caption),
-                  for (final a in m['attachments'] as List? ?? const [])
-                    Padding(
-                      padding: const EdgeInsets.only(top: Space.x2),
-                      child: OutlinedButton.icon(
-                        onPressed: () => unawaited(_download(context, asJson(a))),
-                        icon: const Icon(Icons.download_outlined, size: 18),
-                        label: Text('${asJson(a)['filename']} · ${Fmt.fileSize(asJson(a)['size']! as int)}'),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<void> _download(BuildContext context, Json a) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final bytes = await context.api.attachment(patientId, a['id']! as String);
-      final uri = await FilePicker.saveFile(
-        fileName: a['filename']! as String,
-        bytes: bytes,
-        mimeType: a['mime_type']! as String,
-      );
-      if (uri != null) messenger.showSnackBar(SnackBar(content: Text('Файл «${a['filename']}» сохранён')));
-    } on Exception catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Не удалось скачать: ${describeError(e)}')));
-    }
-  }
 }
 
 class _Labs extends StatelessWidget {

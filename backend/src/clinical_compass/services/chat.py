@@ -26,13 +26,19 @@ class ChatService:
         self._present = Presenter(deps)
 
     def thread(self, principal: Principal, patient_id: str) -> Json:
-        """Вся переписка по порядку; сообщения собеседника отмечаются прочитанными."""
+        """Вся переписка по порядку. Только чтение: «прочитано» отмечает `mark_read`."""
         self._access.require_read(principal, patient_id)
-        counterpart = DOCTOR if principal.role is Role.PATIENT else PATIENT
-        if self._d.repos.messages.mark_read(patient_id, sender=counterpart, at=self._d.clock.now()):
-            self._d.notify(chat_channel(patient_id), "read", reader=principal.role.value)
         messages = self._present.messages(patient_id, for_patient=principal.role is Role.PATIENT)
         return {"patient_id": patient_id, "messages": list(reversed(messages))}
+
+    def mark_read(self, principal: Principal, patient_id: str) -> Json:
+        """Отметить прочитанными сообщения собеседника — когда переписка действительно на экране."""
+        self._access.require_read(principal, patient_id)
+        counterpart = DOCTOR if principal.role is Role.PATIENT else PATIENT
+        marked = self._d.repos.messages.mark_read(patient_id, sender=counterpart, at=self._d.clock.now())
+        if marked:
+            self._d.notify(chat_channel(patient_id), "read", reader=principal.role.value)
+        return {"marked": marked}
 
     def doctor_reply(self, principal: Principal, patient_id: str, text: str) -> Json:
         self._access.require_doctor_for(principal, patient_id)

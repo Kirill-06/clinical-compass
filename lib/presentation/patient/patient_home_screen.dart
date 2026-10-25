@@ -31,6 +31,7 @@ class PatientHomeScreen extends StatelessWidget {
         final plan = d['plan'] is Map ? asJson(d['plan']) : null;
         final routing = d['routing'] is Map ? asJson(d['routing']) : null;
         final doctor = d['doctor'] is Map ? asJson(d['doctor']) : null;
+        final unread = d['unread_messages'] as int? ?? 0;
         return PatientPage(
           children: [
             Semantics(header: true, child: Text('Здравствуйте, ${patient['first_name']}', style: AppType.pageTitle)),
@@ -73,10 +74,22 @@ class PatientHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: Space.x2),
                   OutlinedButton.icon(
-                    onPressed: () => context.push('/patient/message'),
+                    onPressed: () => context.go('/patient/chat'),
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
                     label: const Text('Написать врачу или приложить файл'),
                   ),
+                  if (unread > 0) ...[
+                    const SizedBox(height: Space.x2),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: StatusBadge(
+                        label: 'Новых ответов врача: $unread',
+                        tone: StatusTone.accent,
+                        icon: Icons.mark_chat_unread_outlined,
+                        dense: true,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

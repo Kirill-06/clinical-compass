@@ -19,6 +19,7 @@ const _dests = [
   _Dest('/patient', 'Главная', Icons.home_outlined, Icons.home),
   _Dest('/patient/results', 'Результаты', Icons.insights_outlined, Icons.insights),
   _Dest('/patient/medication', 'Приём', Icons.medication_outlined, Icons.medication),
+  _Dest('/patient/chat', 'Врач', Icons.forum_outlined, Icons.forum),
 ];
 
 /// Кабинет пациента: mobile-first, нижняя навигация на телефоне.

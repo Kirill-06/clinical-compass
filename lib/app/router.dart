@@ -11,7 +11,7 @@ import 'package:clinical_compass/presentation/doctor/queue_screen.dart';
 import 'package:clinical_compass/presentation/doctor/rules_screen.dart';
 import 'package:clinical_compass/presentation/embed/embed_screens.dart';
 import 'package:clinical_compass/presentation/entry/entry_screen.dart';
-import 'package:clinical_compass/presentation/patient/message_screen.dart';
+import 'package:clinical_compass/presentation/patient/patient_chat_screen.dart';
 import 'package:clinical_compass/presentation/patient/patient_home_screen.dart';
 import 'package:clinical_compass/presentation/patient/patient_medication_screen.dart';
 import 'package:clinical_compass/presentation/patient/patient_results_screen.dart';
@@ -71,6 +71,7 @@ GoRouter buildRouter(AppServices services) {
           GoRoute(path: '/patient', pageBuilder: (c, s) => _page(s, const PatientHomeScreen())),
           GoRoute(path: '/patient/results', pageBuilder: (c, s) => _page(s, const PatientResultsScreen())),
           GoRoute(path: '/patient/medication', pageBuilder: (c, s) => _page(s, const PatientMedicationScreen())),
+          GoRoute(path: '/patient/chat', pageBuilder: (c, s) => _page(s, const PatientChatScreen())),
         ],
       ),
       GoRoute(
@@ -84,7 +85,8 @@ GoRouter buildRouter(AppServices services) {
         },
       ),
       GoRoute(path: '/patient/symptom', parentNavigatorKey: rootKey, builder: (c, s) => const SymptomScreen()),
-      GoRoute(path: '/patient/message', parentNavigatorKey: rootKey, builder: (c, s) => const MessageScreen()),
+      // Старый адрес «Сообщение врачу» — теперь это чат.
+      GoRoute(path: '/patient/message', redirect: (_, _) => '/patient/chat'),
       GoRoute(path: '/admin', pageBuilder: (c, s) => _page(s, const AdminScreen())),
       GoRoute(
         path: '/embed/launch/:code',

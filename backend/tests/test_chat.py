@@ -34,6 +34,14 @@ def _chat(api: Api, patient_id: str, as_: str) -> list[dict[str, Any]]:
     return list(body["messages"])
 
 
+def _open_chat(api: Api, patient_id: str, as_: str) -> int:
+    """Как клиент: прочитать ленту и отметить сообщения собеседника прочитанными."""
+    _chat(api, patient_id, as_)
+    status, body = api.call("POST", f"/patients/{patient_id}/chat/read", as_=as_)
+    assert status == 200, body
+    return int(body["marked"])
+
+
 def test_doctor_and_patient_exchange_messages_in_one_thread(api: Api) -> None:
     api.call("POST", "/patients/p_a1/messages", as_="p_a1", body={"text": "Стала хуже спать"})
     status, reply = api.call(
@@ -59,19 +67,22 @@ def test_only_the_linked_doctor_can_reply(api: Api) -> None:
     assert api.call("POST", "/doctor/patients/p_a1/messages", as_="p_a1", body=body)[0] == 403
     assert api.call("GET", "/patients/p_a1/chat", as_="doc_b")[0] == 403
     assert api.call("GET", "/patients/p_a2/chat", as_="p_a1")[0] == 403
+    assert api.call("POST", "/patients/p_a1/chat/read", as_="doc_b")[0] == 403
     assert api.call("POST", "/doctor/patients/p_a1/messages", as_="doc_a", body={"text": "  "})[0] == 400
 
 
 def test_unread_counters_clear_when_the_chat_is_opened(api: Api) -> None:
     api.call("POST", "/doctor/patients/p_a1/messages", as_="doc_a", body={"text": "Как самочувствие?"})
-    assert api.call("GET", "/patients/p_a1/dashboard", as_="p_a1")[1]["unread_messages"] == 1
+    # Чтение ленты ничего не меняет: отметку ставит только явный запрос.
     _chat(api, "p_a1", as_="p_a1")
+    assert api.call("GET", "/patients/p_a1/dashboard", as_="p_a1")[1]["unread_messages"] == 1
+    assert _open_chat(api, "p_a1", as_="p_a1") == 1
     assert api.call("GET", "/patients/p_a1/dashboard", as_="p_a1")[1]["unread_messages"] == 0
 
     api.call("POST", "/patients/p_a1/messages", as_="p_a1", body={"text": "Лучше, спасибо"})
     rows = {r["patient"]["id"]: r for r in api.call("GET", "/doctor/patients", as_="doc_a")[1]}
     assert rows["p_a1"]["unread_messages"] == 1
-    _chat(api, "p_a1", as_="doc_a")
+    _open_chat(api, "p_a1", as_="doc_a")
     rows = {r["patient"]["id"]: r for r in api.call("GET", "/doctor/patients", as_="doc_a")[1]}
     assert rows["p_a1"]["unread_messages"] == 0
 
