@@ -269,6 +269,8 @@ class MessageRow(Base):
     extraction_status: Mapped[str] = mapped_column(String(24))
     extraction_error: Mapped[str | None] = mapped_column(Text)
     clarifying_questions: Mapped[list[Any]]
+    read_at: Mapped[datetime | None]
+    """Когда получатель (пациент или врач) открыл переписку с этим сообщением."""
 
 
 class AttachmentRow(Base):

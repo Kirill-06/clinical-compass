@@ -1,10 +1,10 @@
 """Зависимости сценариев: время клиники, хранилище файлов, репозитории, контракты."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -23,6 +23,7 @@ from clinical_compass.repositories.workflow import (
     IdempotencyRepository,
     MessageRepository,
 )
+from clinical_compass.services.realtime import RealtimeEvent
 
 
 class ClinicClock:
@@ -151,11 +152,24 @@ class Deps:
     extractor: Extractor
     storage: BlobStorage
     limits: Limits
+    outbox: list[RealtimeEvent] = field(default_factory=list)
+    """События для открытых окон; публикуются после коммита транзакции (`api/deps.py`)."""
 
     def with_clock(self, clock: ClinicClock) -> "Deps":
         return Deps(
-            self.session, self.repos, self.contracts, clock, self.extractor, self.storage, self.limits
+            self.session,
+            self.repos,
+            self.contracts,
+            clock,
+            self.extractor,
+            self.storage,
+            self.limits,
+            self.outbox,
         )
+
+    def notify(self, channel: str, kind: str, **data: Any) -> None:
+        """Сообщить открытым окнам, что в канале появилось новое (после коммита)."""
+        self.outbox.append(RealtimeEvent(channel, {"kind": kind, **data}))
 
     def audit(
         self, actor: Principal, action: str, entity: str, entity_id: str, patient_id: str | None

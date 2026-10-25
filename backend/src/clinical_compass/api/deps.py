@@ -24,12 +24,15 @@ RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
 def get_deps(runtime: RuntimeDep) -> Iterator[Deps]:
     """Одна транзакция на запрос: commit при успехе, rollback при ошибке."""
     with runtime.session_factory() as session:
+        deps = runtime.deps(session)
         try:
-            yield runtime.deps(session)
+            yield deps
             session.commit()
         except Exception:
             session.rollback()
             raise
+        # Только после коммита: клиент сразу перечитает данные, и они должны уже быть в базе.
+        runtime.realtime.publish(deps.outbox)
 
 
 DepsDep = Annotated[Deps, Depends(get_deps)]

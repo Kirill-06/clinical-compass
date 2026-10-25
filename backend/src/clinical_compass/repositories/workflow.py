@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from clinical_compass.db.models import (
@@ -58,6 +58,24 @@ class MessageRepository:
             .order_by(MessageRow.created_at.desc())
         )
         return list(self._s.scalars(stmt))
+
+    def unread_count(self, patient_id: str, *, sender: str) -> int:
+        """Сколько сообщений от `sender` ещё не прочитал собеседник."""
+        stmt = select(func.count()).where(
+            MessageRow.patient_id == patient_id, MessageRow.sender == sender, MessageRow.read_at.is_(None)
+        )
+        return int(self._s.scalar(stmt) or 0)
+
+    def mark_read(self, patient_id: str, *, sender: str, at: datetime) -> int:
+        """Отметить прочитанными сообщения от `sender`; возвращает их число."""
+        stmt = (
+            update(MessageRow)
+            .where(
+                MessageRow.patient_id == patient_id, MessageRow.sender == sender, MessageRow.read_at.is_(None)
+            )
+            .values(read_at=at)
+        )
+        return int(self._s.execute(stmt).rowcount or 0)  # type: ignore[attr-defined]
 
     def attachments(self, message_ids: Iterable[str]) -> dict[str, list[AttachmentRow]]:
         ids = list(message_ids)

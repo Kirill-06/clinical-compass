@@ -37,6 +37,7 @@ from clinical_compass.services.access import AccessPolicy
 from clinical_compass.services.context import Deps, Principal, new_id
 from clinical_compass.services.errors import ConflictError, InvalidInputError, NotFoundError
 from clinical_compass.services.presenter import Json, Presenter
+from clinical_compass.services.realtime import chat_channel
 from clinical_compass.services.safety import SafetyService
 from clinical_compass.services.state import PatientStateService
 
@@ -85,6 +86,7 @@ class PatientService:
             "today": self._present.today_intakes(patient_id),
             "notices": self._present.notices(open_alerts),
             "emergency_alert_ids": SafetyService(self._d).pending_for(patient_id),
+            "unread_messages": self._d.repos.messages.unread_count(patient_id, sender="doctor"),
             "routing": self._present.visible_routing(patient_id),
             "recent": self._present.timeline(patient_id, for_patient=True)[:6],
         }
@@ -295,6 +297,7 @@ class PatientService:
 
         if body:
             self._extract_facts(principal, message, body)
+        self._d.notify(chat_channel(patient_id), "message", message_id=message.id, sender="patient")
 
         alerts = self._state.evaluate(patient_id, principal)
         return {

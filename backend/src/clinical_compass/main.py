@@ -14,7 +14,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 
 from clinical_compass import SCHEMA_VERSION
 from clinical_compass.api.errors import install_error_handlers
-from clinical_compass.api.routers import admin, auth, doctor, integrations, internal, patients, system
+from clinical_compass.api.routers import admin, auth, chat, doctor, integrations, internal, patients, system
 from clinical_compass.api.runtime import Runtime
 from clinical_compass.config import Settings, get_settings
 from clinical_compass.db.migrations import upgrade_to_head
@@ -60,7 +60,7 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
     )
     install_error_handlers(app)
     _install_frame_policy(app, settings)
-    routers = (system, auth, patients, doctor, admin, internal, integrations)
+    routers = (system, auth, patients, doctor, chat, admin, internal, integrations)
     for module in routers:
         app.include_router(module.router)
     if settings.web_dir is not None:

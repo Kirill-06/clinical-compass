@@ -19,6 +19,7 @@ from clinical_compass.services.context import (
     LocalBlobStorage,
     Repositories,
 )
+from clinical_compass.services.realtime import CentrifugoRealtime, DisabledRealtime, Realtime
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class Runtime:
     extractor: Extractor
     storage: BlobStorage
     limits: Limits
+    realtime: Realtime
 
     @classmethod
     def build(
@@ -39,6 +41,7 @@ class Runtime:
         *,
         extractor: Extractor | None = None,
         storage: BlobStorage | None = None,
+        realtime: Realtime | None = None,
     ) -> "Runtime":
         engine = make_engine(settings.database_url)
         fixed = settings.fixed_now
@@ -66,6 +69,7 @@ class Runtime:
             extractor=configured_extractor,
             storage=storage or LocalBlobStorage(settings.storage_dir),
             limits=Limits(max_file_bytes=settings.max_upload_bytes, max_files=settings.max_files_per_message),
+            realtime=realtime or _realtime_from(settings),
         )
 
     def deps(self, session: Session) -> Deps:
@@ -77,4 +81,21 @@ class Runtime:
             extractor=self.extractor,
             storage=self.storage,
             limits=self.limits,
+            outbox=[],
         )
+
+
+def _realtime_from(settings: Settings) -> Realtime:
+    if not (
+        settings.centrifugo_api_url
+        and settings.centrifugo_api_key
+        and settings.centrifugo_token_secret
+        and settings.centrifugo_public_url
+    ):
+        return DisabledRealtime()
+    return CentrifugoRealtime(
+        api_url=settings.centrifugo_api_url,
+        api_key=settings.centrifugo_api_key,
+        token_secret=settings.centrifugo_token_secret,
+        public_url=settings.centrifugo_public_url,
+    )

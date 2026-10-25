@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     extractor_token: str | None = None
     extractor_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
 
+    centrifugo_api_url: str | None = None
+    """Серверный API Centrifugo (`http://centrifugo:8000/api`). Чат в реальном времени включается,
+    когда заданы все четыре настройки `CC_CENTRIFUGO_*`; иначе клиенты обновляются опросом."""
+    centrifugo_api_key: str | None = None
+    centrifugo_token_secret: str | None = Field(default=None, min_length=32)
+    centrifugo_public_url: str | None = None
+    """WebSocket-адрес для клиентов: `wss://<домен>/connection/websocket`."""
+
     fixed_now: datetime | None = None
     """Только для тестов: фиксированное «сейчас»."""
 

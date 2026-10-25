@@ -21,6 +21,7 @@ from clinical_compass.domain.extraction import Extractor
 from clinical_compass.main import create_app
 from clinical_compass.seed import seed_if_empty
 from clinical_compass.services.context import MemoryBlobStorage
+from clinical_compass.services.realtime import Realtime
 
 FIXED_NOW = datetime(2026, 10, 21, 9, tzinfo=UTC)
 INTERNAL_TOKEN = "test-internal-token"
@@ -102,12 +103,14 @@ def make_api(seeded_db: Path, tmp_path: Path) -> Iterator[ApiFactory]:
     """Фабрика клиентов. `db_file` — переиспользовать базу (проверка перезапуска)."""
     clients: list[TestClient] = []
 
-    def factory(*, extractor: Extractor | None = None, db_file: Path | None = None) -> Api:
+    def factory(
+        *, extractor: Extractor | None = None, db_file: Path | None = None, realtime: Realtime | None = None
+    ) -> Api:
         if db_file is None:
             db_file = tmp_path / f"db_{len(clients)}.sqlite"
             shutil.copy(seeded_db, db_file)
         settings = make_settings(db_file)
-        runtime = Runtime.build(settings, extractor=extractor, storage=_SHARED_STORAGE)
+        runtime = Runtime.build(settings, extractor=extractor, storage=_SHARED_STORAGE, realtime=realtime)
         client = TestClient(create_app(settings, runtime))
         client.__enter__()
         clients.append(client)

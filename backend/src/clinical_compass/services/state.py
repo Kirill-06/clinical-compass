@@ -13,6 +13,7 @@ from clinical_compass.domain.enums import AlertStatus, Instrument, IntakeSlot, R
 from clinical_compass.domain.rules import RuleContext, RuleEngine
 from clinical_compass.domain.state import Alert, PatientState, QuestionnaireSchedule
 from clinical_compass.services.context import Deps, Principal, new_id
+from clinical_compass.services.realtime import queue_channel
 
 ROUTING_REVIEW_RULE = "R_ROUTING_REVIEW"
 
@@ -128,6 +129,9 @@ class PatientStateService:
             created.append(row)
             if result.rule_id == ROUTING_REVIEW_RULE:
                 self._mark_routing_review(patient_id, actor)
+        doctors = {row.doctor_id for row in created if row.doctor_id}
+        for doctor_id in sorted(doctors):
+            self._d.notify(queue_channel(doctor_id), "alerts", patient_id=patient_id, count=len(created))
         return created
 
     def _mark_routing_review(self, patient_id: str, actor: Principal) -> None:

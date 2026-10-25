@@ -142,3 +142,7 @@ class LaunchExchangeRequest(_Request):
 class SafetyActionRequest(_Request):
     alert_id: str = Field(min_length=1, max_length=64)
     action: SafetyAction
+
+
+class DoctorMessageRequest(_Request):
+    text: str = Field(min_length=1, max_length=2000)

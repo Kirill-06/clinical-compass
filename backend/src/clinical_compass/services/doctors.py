@@ -51,6 +51,7 @@ class DoctorService:
                     "top_alert": self._present.alert(top) if top else None,
                     "routing": self._d.repos.care.routing(patient_id).to_schema(),
                     "last_activity": timeline[0] if timeline else None,
+                    "unread_messages": self._d.repos.messages.unread_count(patient_id, sender="patient"),
                 }
             )
 

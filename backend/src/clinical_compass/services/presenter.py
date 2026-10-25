@@ -144,7 +144,9 @@ class Presenter:
         data: Json = {
             "id": m.id,
             "patient_id": m.patient_id,
+            "sender": m.sender,
             "text": m.text,
+            "read_at": iso(m.read_at),
             "attachments": [self.attachment(a) for a in attachments],
             "created_at": iso(m.created_at),
         }

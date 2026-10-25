@@ -18,15 +18,35 @@ services:
       retries: 10
     restart: unless-stopped
 
+  centrifugo:
+    # Доставка событий чата и очереди в открытые окна. Данные клиенты берут через API приложения.
+    image: centrifugo/centrifugo:v6.6.2
+    command: centrifugo
+    environment:
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: ${CENTRIFUGO_TOKEN_SECRET:?задайте CENTRIFUGO_TOKEN_SECRET в .env}
+      CENTRIFUGO_HTTP_API_KEY: ${CENTRIFUGO_API_KEY:?задайте CENTRIFUGO_API_KEY в .env}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"chat"},{"name":"queue"}]'
+    ports:
+      # Только localhost: браузер подключается через обратный прокси по пути /connection/.
+      - "127.0.0.1:${CENTRIFUGO_PORT:-8012}:8000"
+    restart: unless-stopped
+
   app:
     build: .
     image: clinical-compass:0.2.0
     depends_on:
       db:
         condition: service_healthy
+      centrifugo:
+        condition: service_started
     env_file: .env
     environment:
       CC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-clinical_compass}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-clinical_compass}
+      CC_CENTRIFUGO_API_URL: http://centrifugo:8000/api
+      CC_CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+      CC_CENTRIFUGO_TOKEN_SECRET: ${CENTRIFUGO_TOKEN_SECRET}
+      CC_CENTRIFUGO_PUBLIC_URL: ${CENTRIFUGO_PUBLIC_URL:-ws://localhost:8012/connection/websocket}
     ports:
       # Только localhost: наружу сервис выходит через обратный прокси (Caddy, nginx).
       - "127.0.0.1:${APP_PORT:-8080}:8080"
