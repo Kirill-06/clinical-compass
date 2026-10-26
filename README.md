@@ -43,7 +43,7 @@ GAD-7 и PHQ-9, отмечает приём препарата и сообщае
 
 **Проверяющим:** [docs/REVIEW_GUIDE.md](docs/REVIEW_GUIDE.md) — где в коде и тестах каждый критерий и как проверить его на стенде за минуту.
 
-**Демо-стенд:** https://compass.lamagate.com · окно в МИС — https://compass.lamagate.com/mis-demo.html
+**Демо-стенд:** https://onco-core.ru · окно в МИС — https://onco-core.ru/mis-demo.html
 (как обновлять — [docs/DEPLOY.md](docs/DEPLOY.md))
 
 ## Быстрый старт

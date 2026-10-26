@@ -1,6 +1,6 @@
 # Развёртывание
 
-## Демо-стенд: https://compass.lamagate.com
+## Демо-стенд: https://onco-core.ru
 
 Сервер команды (`ssh -p 2222 kirill@155.212.15.238`), по правилам сервера:
 
@@ -10,7 +10,7 @@
 | Секреты | `~/apps/clinical-compass/.env` (права 600, сгенерированы на сервере, в git не попадают) |
 | Порт приложения | `127.0.0.1:8010` — наружу только через edge-caddy |
 | Centrifugo (чат) | `127.0.0.1:8012`, снаружи — `wss://<домен>/connection/websocket` через тот же Caddy |
-| Домен | `/etc/caddy/sites/compass.caddy` → `reverse_proxy 127.0.0.1:8010` |
+| Домен | `/etc/caddy/sites/onco-core.caddy` → приложение `127.0.0.1:8010`, `/connection/*` → Centrifugo; старый `compass.lamagate.com` перенаправляет сюда |
 | База | PostgreSQL в томе `clinical-compass_db-data`, вложения — `clinical-compass_files` |
 
 ### Обновить стенд до текущего `main`
@@ -30,7 +30,7 @@ ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose 
 ### Проверить
 
 ```bash
-curl -s https://compass.lamagate.com/health
+curl -s https://onco-core.ru/health
 ```
 
 ```bash
@@ -45,9 +45,9 @@ ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose 
 ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose -p clinical-compass down -v && docker compose -p clinical-compass up -d'
 ```
 
-## Переезд на onco-core.ru и включение чата
+## Переезд на onco-core.ru и включение чата (выполнено 26.10.2026)
 
-Конфиги Caddy уже лежат на сервере: `~/apps/clinical-compass/onco-core.caddy` (приложение и WebSocket
+Шаги ниже уже сделаны; оставлены как инструкция для другого домена. Конфиги Caddy лежат на сервере: `~/apps/clinical-compass/onco-core.caddy` (приложение и WebSocket
 Centrifugo по пути `/connection/`) и обновлённый `compass.caddy` (старый адрес перенаправляет на новый).
 
 1. **DNS.** У регистратора (Spaceweb) A-запись `onco-core.ru` → `155.212.15.238`. Запись `www` уже указывает туда.
