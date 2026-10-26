@@ -152,6 +152,17 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('doctor sees side effects, including ones outside the leaflet', (tester) async {
+    await pumpApp(tester);
+    await tapText(tester, 'Миронова Анна Сергеевна');
+    await tapText(tester, 'Побочные эффекты');
+    expect(find.text('Вне листка-вкладыша: 1'), findsOneWidget);
+    expect(find.text('«Шумит в ушах по вечерам»'), findsOneWidget);
+    expect(find.text('Головокружение'), findsOneWidget);
+    expect(find.text('Выгрузить таблицу'), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets('MIS launch code opens the patient card in the embedded window', (tester) async {
     final backend = await pumpApp(tester);
     final code = (await tester.runAsync(

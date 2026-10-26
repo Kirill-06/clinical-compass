@@ -2,11 +2,12 @@
 
 from typing import Any
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from clinical_compass.api.deps import DepsDep, PrincipalDep
 from clinical_compass.api.schemas import ContactDeadlineRequest, RoutingRequest, ScheduleRequest
 from clinical_compass.domain.enums import Instrument
+from clinical_compass.services.adverse_events import AdverseEventService
 from clinical_compass.services.doctors import DoctorService
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
@@ -58,3 +59,21 @@ def set_contact_deadline(
     patient_id: str, body: ContactDeadlineRequest, deps: DepsDep, principal: PrincipalDep
 ) -> Json:
     return DoctorService(deps).set_contact_deadline(principal, patient_id, body.deadline)
+
+
+@router.get("/adverse-events")
+def adverse_events(deps: DepsDep, principal: PrincipalDep) -> Json:
+    """Нежелательные явления по пациентам врача; отдельно — эффекты вне листка-вкладыша."""
+    return AdverseEventService(deps).summary(principal)
+
+
+@router.get("/exports/patients.csv", response_class=Response)
+def export_patients(deps: DepsDep, principal: PrincipalDep) -> Response:
+    """Обезличенная сводка по пациентам врача для анализа (CSV, «;», UTF-8 с BOM)."""
+    body = AdverseEventService(deps).patients_csv(principal)
+    filename = f"clinical-compass-patients-{deps.clock.today().isoformat()}.csv"
+    return Response(
+        content=body.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

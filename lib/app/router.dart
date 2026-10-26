@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:clinical_compass/app/app_services.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/presentation/admin/admin_screen.dart';
+import 'package:clinical_compass/presentation/doctor/adverse_events_screen.dart';
 import 'package:clinical_compass/presentation/doctor/doctor_shell.dart';
 import 'package:clinical_compass/presentation/doctor/patient_detail_screen.dart';
 import 'package:clinical_compass/presentation/doctor/patients_screen.dart';
@@ -62,6 +63,7 @@ GoRouter buildRouter(AppServices services) {
               ),
             ],
           ),
+          GoRoute(path: '/doctor/adverse-events', pageBuilder: (c, s) => _page(s, const AdverseEventsScreen())),
           GoRoute(path: '/doctor/rules', pageBuilder: (c, s) => _page(s, const RulesScreen())),
         ],
       ),

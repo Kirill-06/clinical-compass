@@ -21,6 +21,7 @@ class _NavItem {
 const _items = [
   _NavItem('/doctor/queue', 'Очередь', Icons.inbox_outlined, Icons.inbox),
   _NavItem('/doctor/patients', 'Пациенты', Icons.groups_outlined, Icons.groups),
+  _NavItem('/doctor/adverse-events', 'Побочные эффекты', Icons.report_outlined, Icons.report),
   _NavItem('/doctor/rules', 'Правила', Icons.rule_outlined, Icons.rule),
 ];
 

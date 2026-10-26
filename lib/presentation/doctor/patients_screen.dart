@@ -9,6 +9,7 @@ import 'package:clinical_compass/core/format/fmt.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/domain/json.dart';
 import 'package:clinical_compass/presentation/doctor/doctor_shell.dart';
+import 'package:clinical_compass/presentation/doctor/export_button.dart';
 import 'package:clinical_compass/presentation/shared/brand.dart';
 import 'package:clinical_compass/presentation/shared/labels.dart';
 import 'package:clinical_compass/presentation/shared/live_future.dart';
@@ -58,6 +59,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   title: 'Пациенты',
                   subtitle:
                       'Закреплённые за вами · ${Fmt.weekdayLong(now)}, ${Fmt.dateLong(now)} · сортировка по приоритету в очереди',
+                  actions: const [ExportPatientsButton()],
                 ),
                 const SizedBox(height: Space.x4),
                 Align(

@@ -60,7 +60,15 @@ make check
 | Клиент WebSocket и экраны | `lib/data/realtime.dart`, `lib/presentation/chat/`, `lib/presentation/patient/patient_chat_screen.dart` |
 | Тесты | `backend/tests/test_chat.py`, виджет-тест `doctor reply reaches the patient chat` |
 
-## 5. AI-извлечение из свободного текста
+## 5. Побочные эффекты и выгрузка для анализа
+
+| Что | Где |
+|---|---|
+| На стенде | Врач → «Побочные эффекты»: сводка по эффектам и отдельный список эффектов вне листка-вкладыша; кнопка «Выгрузить таблицу» |
+| Сводка и обезличенный CSV | `backend/src/clinical_compass/services/adverse_events.py`, описание столбцов — [EXPORT.md](EXPORT.md) |
+| Тесты | `backend/tests/test_adverse_events.py`, виджет-тест `doctor sees side effects, including ones outside the leaflet` |
+
+## 6. AI-извлечение из свободного текста
 
 | Что | Где |
 |---|---|
@@ -68,19 +76,19 @@ make check
 | Отдельный сервис (GigaChat через OpenAI-совместимый API) | `ai_service/` |
 | HTTP-адаптер backend → сервис | `backend/src/clinical_compass/domain/remote_extraction.py` |
 | Сбой AI не теряет сообщение и не скрывает красные флаги | `services/patients.py::_extract_facts` (страховка встроенным словарём) |
-| Оценка качества: 155 сообщений, risk recall 0.842 | `evaluation/final_model_report.md` |
+| Оценка качества: 155 сообщений, risk recall 0.842 | `evaluation/final_model_report.md`, графики — `docs/presentation/` (`scripts/plot_metrics.py`) |
 | Тесты | `ai_service/tests/` (39), `backend/tests/test_extraction_resilience.py`, `test_remote_extraction.py`, `test_medication_extraction.py` |
 
-## 6. Поддерживаемость и качество кода
+## 7. Поддерживаемость и качество кода
 
 - **Слои с зависимостями сверху вниз:** `api → services → repositories → db`; `domain` — чистая логика без БД и HTTP. Подробно — [backend/README.md](../backend/README.md).
 - **Контракты как данные:** правила, шаблоны текстов, шкалы и справочники лежат в `contracts/` и проверяются при старте (`clinical-compass check-contracts`); приложение получает их через `GET /meta`, тексты не дублируются в коде.
 - **Статическая проверка:** ruff (строгий набор правил) и `mypy --strict` для backend и AI-сервиса, `flutter analyze` — в CI на каждый PR.
-- **Тесты:** backend 110, AI-сервис 39, Flutter 20 — UI-тесты работают поверх настоящего Python-backend, а не моков.
+- **Тесты:** backend 115, AI-сервис 39, Flutter 21 — UI-тесты работают поверх настоящего Python-backend, а не моков.
 - **Миграции БД:** Alembic, `backend/src/clinical_compass/db/alembic/versions/`.
 - **Решения и открытые вопросы:** [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md).
 
-## 7. Развёртывание и безопасность
+## 8. Развёртывание и безопасность
 
 | Что | Где |
 |---|---|

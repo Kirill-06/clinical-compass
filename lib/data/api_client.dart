@@ -268,15 +268,15 @@ class ApiClient extends ChangeNotifier {
     ),
   );
 
-  Future<Uint8List> attachment(String pid, String attachmentId) async {
-    final res = await transport.send(
-      'GET',
-      '/patients/$pid/attachments/$attachmentId',
-      headers: {if (_token != null) 'authorization': 'Bearer $_token'},
-    );
+  Future<Uint8List> attachment(String pid, String attachmentId) =>
+      _bytes('/patients/$pid/attachments/$attachmentId', 'Файл недоступен');
+
+  /// Файл с сервера как есть (вложение, выгрузка таблицы).
+  Future<Uint8List> _bytes(String path, String fallbackError) async {
+    final res = await transport.send('GET', path, headers: {if (_token != null) 'authorization': 'Bearer $_token'});
     if (res.status >= 400) {
       final j = res.json;
-      throw ApiException(res.status, j is Map ? (j['message'] as String? ?? 'Файл недоступен') : 'Файл недоступен');
+      throw ApiException(res.status, j is Map ? (j['message'] as String? ?? fallbackError) : fallbackError);
     }
     return res.bytes;
   }
@@ -309,6 +309,13 @@ class ApiClient extends ChangeNotifier {
       _list(await _call('GET', '/doctor/queue${includeResolved ? '?include_resolved=true' : ''}'));
   Future<Json> dossier(String pid) async => _obj(await _call('GET', '/doctor/patients/$pid/timeline'));
   Future<List<Json>> audit(String pid) async => _list(await _call('GET', '/doctor/patients/$pid/audit'));
+
+  /// Нежелательные явления по пациентам врача; отдельно — эффекты вне листка-вкладыша.
+  Future<Json> adverseEvents() async => _obj(await _call('GET', '/doctor/adverse-events'));
+
+  /// Обезличенная сводка по пациентам врача в CSV (без ФИО и телефонов).
+  Future<Uint8List> exportPatientsCsv() => _bytes('/doctor/exports/patients.csv', 'Не удалось выгрузить таблицу');
+
   Future<Json> rulesSummary() async => _obj(await _call('GET', '/contracts/rules'));
 
   Future<Json> alertAction(String alertId, String action) async =>
