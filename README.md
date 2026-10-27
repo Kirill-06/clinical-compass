@@ -48,6 +48,8 @@ GAD-7 и PHQ-9, отмечает приём препарата и сообщае
 
 **Проверяющим:** [docs/REVIEW_GUIDE.md](docs/REVIEW_GUIDE.md) — где в коде и тестах каждый критерий и как проверить его на стенде за минуту.
 
+**Видео-демо:** [demo/clinical-compass-demo.mp4](demo/clinical-compass-demo.mp4) — весь сценарий за несколько минут.
+
 **Демо-стенд:** https://my.onco-core.ru · окно в МИС — https://my.onco-core.ru/mis-demo.html · лендинг проекта — https://onco-core.ru
 (как обновлять — [docs/DEPLOY.md](docs/DEPLOY.md))
 
