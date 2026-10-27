@@ -530,7 +530,7 @@ class _StateView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Space.x2),
-          const Text('Единственный вход rule engine. Технический вид для проверки контракта.', style: AppType.caption),
+          const Text('Всё, что видят правила. Технический вид для проверки.', style: AppType.caption),
           const SizedBox(height: Space.x3),
           Container(
             constraints: const BoxConstraints(maxHeight: 420),

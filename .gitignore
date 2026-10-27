@@ -55,9 +55,6 @@ backend/data/
 # Local configuration (copy from .env.example)
 .env
 
-# Local tool configuration
-.claude/
-
 # Local evaluation outputs
 evaluation/out/
 

@@ -98,7 +98,7 @@ class NoticesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Padding(
     padding: EdgeInsets.only(bottom: Space.x2),
-    child: Text('Сообщения о ваших данных', style: AppType.subsectionTitle),
+    child: Text('Важное', style: AppType.subsectionTitle),
   );
 }
 

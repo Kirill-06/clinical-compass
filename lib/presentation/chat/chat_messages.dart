@@ -162,7 +162,8 @@ class _Bubble extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.only(top: Space.x1),
                       child: StatusBadge(
-                        label: 'ИИ недоступен — сообщение сохранено, красные флаги проверены словарём',
+                        label:
+                            'Автоматический разбор не сработал. Сообщение сохранено, опасные фразы проверены по словарю',
                         tone: StatusTone.warn,
                         dense: true,
                       ),
@@ -243,7 +244,7 @@ class _AttachmentChip extends StatelessWidget {
   }
 }
 
-/// «Сообщения приходят сразу» или «обновляется раз в 20 секунд» — честно о доставке.
+/// «Сообщения приходят сразу» или «обновляется раз в 20 секунд» — как сейчас доставляются сообщения.
 class ChatDeliveryHint extends StatelessWidget {
   const ChatDeliveryHint({super.key});
 

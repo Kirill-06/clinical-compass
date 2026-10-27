@@ -42,11 +42,11 @@ Message-level medication: TP **28 → 27**, FP **19 → 27**, FN **3 → 4**. В
 | `gen_115`: «Я переживаю из-за конфликта на работе.» | `other_concern` | `symptom/anxiety_increased` | Переживание интерпретировано как симптом. Граница gold `other_concern` для обычного рабочего конфликта требует annotation review. |
 | `gen_144`: «Принимаю антидепрессант вместе с ибупрофеном от боли в спине.» | `concomitant_drug_mention` | две medication entities + `back_pain` | Оба препарата найдены, но relation «вместе» не преобразовано в отдельный risk signal. |
 
-Все три gold случая `possible_allergic_reaction`, пропущенные в v1.1, в v1.2 извлечены (3/3). Prompt v1.3 в рамках этого отчёта не создаётся.
+Все три gold случая `possible_allergic_reaction`, пропущенные в v1.1, в v1.2 извлечены (3/3). Prompt v1.3 пока не делали.
 
-**Recommendation: freeze extractor_prompt_v1.2 for MVP.** Сохранить перечисленные medication и risk случаи для следующей ручной annotation/medical проверки и отдельного этапа улучшений.
+**Вывод: для MVP фиксируем extractor_prompt_v1.2.** Разобранные выше случаи с medication и risk оставляем на ручную проверку с медиком и следующий этап доработки.
 
-## Тезисы для слайдов
+## Коротко
 
 - Сравнение на тех же 155 сообщениях и 172 gold entities; message-level matching.
 - Risk recall: **0.368 → 0.842**; найдено 16 из 19 risk signals вместо 7.
@@ -54,4 +54,4 @@ Message-level medication: TP **28 → 27**, FP **19 → 27**, FN **3 → 4**. В
 - Overall F1: **0.656 → 0.704**; schema pass 100%, failed messages 0 в обоих прогонах.
 - Medication F1 снизился **0.718 → 0.635**: FP 19 → 27, FN 3 → 4; основная часть FP — лишние события и дубли, а не optional `drug`.
 - Остались три risk FN: потенциальная передозировка, `other_concern` с неоднозначной gold-границей и одновременный приём двух препаратов.
-- **Freeze extractor_prompt_v1.2 for MVP**; дальнейшие изменения после ручной проверки спорных случаев.
+- Для MVP фиксируем **extractor_prompt_v1.2**; дальше — после ручной проверки спорных случаев.

@@ -64,8 +64,8 @@ class RulesScreen extends StatelessWidget {
                   tone: StatusTone.neutral,
                   icon: Icons.info_outline,
                   body:
-                      'doctor_priority управляет порядком в очереди врача, patient_action — текстом пациенту; '
-                      'это независимые поля. Система не вызывает скорую и не принимает решений о терапии.',
+                      'Приоритет для врача и текст для пациента задаются отдельно: срочное событие в очереди '
+                      'не означает тревожного сообщения пациенту. Скорую система не вызывает, лечение не назначает.',
                 ),
                 const SizedBox(height: Space.x5),
                 Panel(
