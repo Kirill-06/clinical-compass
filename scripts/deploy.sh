@@ -60,7 +60,7 @@ deploy_app() {
 
   echo "→ Проверка $public_url/health"
   for _ in $(seq 1 30); do
-    if curl -fsS -o /dev/null --max-time 5 "$public_url/health"; then
+    if curl -fs -o /dev/null --max-time 5 "$public_url/health"; then
       echo "Готово: $public_url ($commit)"
       return
     fi
