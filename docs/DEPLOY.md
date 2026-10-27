@@ -1,6 +1,8 @@
 # Развёртывание
 
-## Демо-стенд: https://onco-core.ru
+## Демо-стенд: https://my.onco-core.ru
+
+На основном домене https://onco-core.ru — лендинг проекта (папка `landing/`, см. ниже).
 
 Сервер команды (`ssh -p 2222 kirill@155.212.15.238`), по правилам сервера:
 
@@ -10,7 +12,7 @@
 | Секреты | `~/apps/clinical-compass/.env` (права 600, сгенерированы на сервере, в git не попадают) |
 | Порт приложения | `127.0.0.1:8010` — наружу только через edge-caddy |
 | Centrifugo (чат) | `127.0.0.1:8012`, снаружи — `wss://<домен>/connection/websocket` через тот же Caddy |
-| Домен | `/etc/caddy/sites/onco-core.caddy` → приложение `127.0.0.1:8010`, `/connection/*` → Centrifugo; старый `compass.lamagate.com` перенаправляет сюда |
+| Домен | `/etc/caddy/sites/onco-core.caddy`: `my.onco-core.ru` → приложение `127.0.0.1:8010`, `/connection/*` → Centrifugo; `onco-core.ru` → лендинг, старые ссылки на сервис (`/mis-demo.html`, `/docs`, `/integrations/*`) перенаправляются на `my.`; `compass.lamagate.com` тоже ведёт на `my.` |
 | База | PostgreSQL в томе `clinical-compass_db-data`, вложения — `clinical-compass_files` |
 
 ### Обновить стенд до текущего `main`
@@ -30,7 +32,7 @@ ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose 
 ### Проверить
 
 ```bash
-curl -s https://onco-core.ru/health
+curl -s https://my.onco-core.ru/health
 ```
 
 ```bash
@@ -45,7 +47,27 @@ ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose 
 ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose -p clinical-compass down -v && docker compose -p clinical-compass up -d'
 ```
 
+## Лендинг: https://onco-core.ru
+
+Статическая страница из `landing/` в контейнере nginx, `~/apps/onco-landing/`, порт `127.0.0.1:8013`.
+Конфиг Caddy для обоих доменов — `landing/onco-core.caddy`.
+
+Обновить:
+
+```bash
+rsync -az --delete -e 'ssh -p 2222' landing/ kirill@155.212.15.238:apps/onco-landing/
+```
+
+```bash
+ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/onco-landing && docker compose -p onco-landing up -d --build'
+```
+
+Посмотреть локально: `python3 -m http.server 8090 --directory landing`.
+
 ## Переезд на onco-core.ru и включение чата (выполнено 26.10.2026)
+
+С 27.10.2026 сервис живёт на `my.onco-core.ru`: в `.env` на сервере `PUBLIC_ORIGIN`, `CENTRIFUGO_PUBLIC_URL`
+и `CC_CORS_ORIGINS` указывают на `my.onco-core.ru`.
 
 Шаги ниже уже сделаны; оставлены как инструкция для другого домена. Конфиги Caddy лежат на сервере: `~/apps/clinical-compass/onco-core.caddy` (приложение и WebSocket
 Centrifugo по пути `/connection/`) и обновлённый `compass.caddy` (старый адрес перенаправляет на новый).
@@ -65,7 +87,7 @@ Centrifugo по пути `/connection/`) и обновлённый `compass.cadd
    ssh -t -p 2222 kirill@155.212.15.238 'sudo cp ~/apps/clinical-compass/onco-core.caddy ~/apps/clinical-compass/compass.caddy /etc/caddy/sites/ && docker exec edge-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && docker exec edge-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile'
    ```
 
-5. **Проверка:** `curl -s https://onco-core.ru/health`, затем в приложении у пациента во вкладке «Врач» горит
+5. **Проверка:** `curl -s https://my.onco-core.ru/health`, затем в приложении у пациента во вкладке «Врач» горит
    «Сообщения приходят сразу».
 
 ## Любой другой сервер

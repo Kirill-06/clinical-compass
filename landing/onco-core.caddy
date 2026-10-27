@@ -1,0 +1,33 @@
+# Клинический компас: лендинг на onco-core.ru (nginx на 127.0.0.1:8013, ~/apps/onco-landing),
+# сервис на my.onco-core.ru (FastAPI + Flutter Web на 127.0.0.1:8010, Centrifugo на 127.0.0.1:8012).
+onco-core.ru {
+    encode gzip zstd
+    # Старые ссылки на сервис (окно МИС, документация API, вызовы из МИС) ведут на новый адрес.
+    @service path /mis-demo.html /docs /docs/* /openapi.json /health /integrations/* /connection/*
+    redir @service https://my.onco-core.ru{uri} 308
+    reverse_proxy 127.0.0.1:8013
+}
+
+my.onco-core.ru {
+    encode gzip zstd
+    # WebSocket Centrifugo: Caddy проксирует Upgrade сам.
+    handle /connection/* {
+        reverse_proxy 127.0.0.1:8012
+    }
+    handle {
+        reverse_proxy 127.0.0.1:8010
+    }
+}
+
+www.onco-core.ru {
+    redir https://onco-core.ru{uri} permanent
+}
+
+# Global auto redirects are disabled, so redirect HTTP explicitly.
+http://onco-core.ru, http://www.onco-core.ru {
+    redir https://onco-core.ru{uri} permanent
+}
+
+http://my.onco-core.ru {
+    redir https://my.onco-core.ru{uri} permanent
+}

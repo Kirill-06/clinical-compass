@@ -1,0 +1,7 @@
+# Лендинг onco-core.ru: статическая страница в nginx, порт только на 127.0.0.1.
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${LANDING_PORT:-8013}:8080"

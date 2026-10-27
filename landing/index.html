@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Клинический компас — AI-ассистент врача между визитами</title>
+  <meta name="description" content="Пациент рассказывает о самочувствии в приложении, врач получает очередь сигналов, разобранных по срочности. Решение всегда остаётся за врачом.">
+  <meta property="og:title" content="Клинический компас — AI-ассистент врача между визитами">
+  <meta property="og:description" content="Самочувствие пациента между визитами превращается в понятные сигналы для врача.">
+  <meta property="og:image" content="https://onco-core.ru/assets/screens/doctor-queue.jpg">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">К содержанию</a>
+
+  <header class="top">
+    <nav class="top__inner wrap" aria-label="Основная навигация">
+      <a class="brand" href="#top" aria-label="Клинический компас, наверх">
+        <svg class="brand__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark"/></svg>
+        <span>Клинический компас</span>
+      </a>
+      <ul class="top__links">
+        <li><a href="#problem">Зачем</a></li>
+        <li><a href="#how">Как работает</a></li>
+        <li><a href="#metrics">Метрики</a></li>
+        <li><a href="#team">Команда</a></li>
+      </ul>
+      <a class="btn btn--ink btn--sm" href="https://my.onco-core.ru">Открыть демо</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="rings" aria-hidden="true"></div>
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <p class="eyebrow">Для психиатров и психотерапевтов</p>
+          <h1 id="hero-title" class="display">AI‑ассистент врача между визитами</h1>
+          <p class="lead">Пациент рассказывает о&nbsp;самочувствии в&nbsp;приложении&nbsp;— врач получает <mark>очередь сигналов</mark>, разобранных по&nbsp;срочности. Решение всегда остаётся за&nbsp;врачом.</p>
+          <div class="hero__actions">
+            <a class="btn btn--ink" href="https://my.onco-core.ru">Открыть демо
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10m-4-4 4 4-4 4"/></svg></a>
+            <a class="btn btn--line" href="https://my.onco-core.ru/mis-demo.html">Окно в ЕМИАС / 1С</a>
+          </div>
+          <dl class="hero__stats">
+            <div><dt>Находит сигналы риска</dt><dd>84<small>%</small></dd></div>
+            <div><dt>F1 извлечения фактов</dt><dd>0,70</dd></div>
+            <div><dt>Клинических правил</dt><dd>16</dd></div>
+          </dl>
+        </div>
+        <figure class="hero__shot reveal">
+          <div class="browser">
+            <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>my.onco-core.ru</span></div>
+            <img src="assets/screens/doctor-queue.jpg" width="800" height="600" alt="Очередь врача: сверху закреплены срочные события, у каждого кнопка «Почему?»" fetchpriority="high">
+          </div>
+          <div class="phone phone--hero">
+            <img src="assets/screens/patient-home.jpg" width="375" height="812" alt="Главный экран пациента: опросники и подсказка, что делать дальше">
+          </div>
+          <figcaption class="sr">Рабочее место врача и приложение пациента</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="problem" id="problem" aria-labelledby="problem-title">
+      <div class="wrap problem__grid">
+        <div>
+          <p class="eyebrow eyebrow--light">Проблема</p>
+          <h2 id="problem-title" class="h2">Между визитами врач не&nbsp;видит пациента</h2>
+        </div>
+        <div class="problem__points">
+          <article class="pain reveal">
+            <span class="pain__num">2–4</span>
+            <span class="pain__unit">недели</span>
+            <p>О пропуске таблеток, побочном эффекте или ухудшении врач узнаёт только на&nbsp;следующем приёме.</p>
+          </article>
+          <article class="pain reveal">
+            <span class="pain__num">1</span>
+            <span class="pain__unit">месяц</span>
+            <p>За это время многие бросают терапию. А&nbsp;то, что лечение не&nbsp;принимали, потом путают с&nbsp;тем, что оно не&nbsp;работает.</p>
+          </article>
+        </div>
+      </div>
+      <div class="wrap audience">
+        <article class="audience__card reveal">
+          <h3>Психиатр и&nbsp;психотерапевт</h3>
+          <p>Ведут пациентов с&nbsp;генерализованным тревожным расстройством на&nbsp;терапии АВИАНДР®. Им&nbsp;нужно видеть динамику, приверженность и&nbsp;переносимость&nbsp;— без звонка каждому.</p>
+        </article>
+        <article class="audience__card reveal">
+          <h3>Терапевт и&nbsp;невролог</h3>
+          <p>К&nbsp;ним пациенты с&nbsp;тревогой приходят первыми. Им&nbsp;нужно понимать, когда направить к&nbsp;психиатру обязательно, а&nbsp;когда&nbsp;— желательно.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <p class="eyebrow">Как это устроено</p>
+        <h2 id="how-title" class="h2">ИИ разбирает текст. <span class="muted">Срочность решают правила.</span></h2>
+        <ol class="flow">
+          <li class="flow__step reveal">
+            <span class="flow__n">01</span>
+            <h3>Пациент</h3>
+            <p>Раз в две недели проходит GAD-7 и&nbsp;PHQ-9, утром и&nbsp;вечером отмечает приём препарата, пишет о&nbsp;самочувствии своими словами.</p>
+          </li>
+          <li class="flow__step reveal">
+            <span class="flow__n">02</span>
+            <h3>ИИ на GigaChat</h3>
+            <p>Переводит свободный текст в&nbsp;факты: симптомы, сигналы риска, пропуски приёма, анализы. Больше он ничего не&nbsp;решает.</p>
+          </li>
+          <li class="flow__step flow__step--accent reveal">
+            <span class="flow__n">03</span>
+            <h3>Правила</h3>
+            <p>16 детерминированных правил по&nbsp;КР&nbsp;Минздрава и&nbsp;инструкции АВИАНДР® определяют приоритет события и&nbsp;что показать пациенту.</p>
+          </li>
+          <li class="flow__step reveal">
+            <span class="flow__n">04</span>
+            <h3>Врач</h3>
+            <p>Видит очередь: срочное закреплено сверху. Кнопка «Почему?» показывает правило, источник и&nbsp;факты, на&nbsp;которых оно сработало.</p>
+          </li>
+        </ol>
+        <div class="how__notes">
+          <p class="note reveal"><strong>ИИ не&nbsp;ставит диагноз</strong> и&nbsp;не&nbsp;назначает лечение. Он&nbsp;только структурирует текст&nbsp;— поэтому каждое решение системы можно объяснить и&nbsp;проверить.</p>
+          <p class="note reveal"><strong>Если ИИ недоступен</strong>, сообщение всё равно сохраняется, а&nbsp;опасные фразы проверяет резервный словарь. Сигнал риска не&nbsp;теряется.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product -->
+    <section class="product" aria-labelledby="product-title">
+      <div class="wrap">
+        <p class="eyebrow">Продукт</p>
+        <h2 id="product-title" class="h2">Одно приложение для пациента, врача и&nbsp;регистратуры</h2>
+        <div class="bento">
+          <figure class="tile tile--queue reveal">
+            <img src="assets/screens/doctor-queue.jpg" width="800" height="600" loading="lazy" alt="Очередь событий врача с приоритетами и действиями пациента">
+            <figcaption><h3>Рабочая очередь</h3><p>События по&nbsp;своим пациентам, отсортированные по&nbsp;приоритету. Видно, что пациент уже сделал.</p></figcaption>
+          </figure>
+          <figure class="tile tile--phone reveal">
+            <div class="phone"><img src="assets/screens/patient-home.jpg" width="375" height="812" loading="lazy" alt="Приложение пациента: опросники и отметки приёма"></div>
+            <figcaption><h3>Пациенту&nbsp;— одна задача на&nbsp;экран</h3><p>iOS, Android и&nbsp;веб из&nbsp;одного кода на&nbsp;Flutter.</p></figcaption>
+          </figure>
+          <figure class="tile tile--mis reveal">
+            <img src="assets/screens/mis-window.jpg" width="800" height="600" loading="lazy" alt="Карточка пациента внутри окна медицинской информационной системы">
+            <figcaption><h3>Внутри ЕМИАС и&nbsp;1С:Медицина</h3><p>Врач открывает карточку прямо из&nbsp;медкарты по&nbsp;одноразовому коду. Сводка уходит обратно в&nbsp;МИС в&nbsp;формате HL7&nbsp;FHIR&nbsp;R4.</p></figcaption>
+          </figure>
+          <div class="tile tile--facts reveal">
+            <h3>Ещё в сервисе</h3>
+            <ul class="facts">
+              <li><b>Чат с&nbsp;врачом</b> в&nbsp;реальном времени, с&nbsp;отметкой «прочитано» и&nbsp;файлами</li>
+              <li><b>Побочные эффекты</b> по&nbsp;всем пациентам; эффекты вне листка-вкладыша выделены отдельно</li>
+              <li><b>Обезличенная выгрузка</b> в&nbsp;CSV для анализа&nbsp;— без ФИО и&nbsp;телефонов</li>
+              <li><b>Журнал аудита</b>: кто, что и&nbsp;когда сделал с&nbsp;каждым событием</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Urgent -->
+    <section class="urgent" aria-labelledby="urgent-title">
+      <div class="wrap urgent__grid">
+        <div class="phone phone--urgent reveal">
+          <img src="assets/screens/emergency-alert.jpg" width="375" height="812" loading="lazy" alt="Экран «Нужна срочная помощь?» с кнопкой «Позвонить 112»">
+        </div>
+        <div class="urgent__copy">
+          <p class="eyebrow eyebrow--urgent">Срочные случаи</p>
+          <h2 id="urgent-title" class="h2">Если пациенту плохо прямо сейчас</h2>
+          <p>Когда в&nbsp;ответах или сообщении появляется сигнал о&nbsp;самоповреждении, пациент сразу видит экран с&nbsp;крупной кнопкой <b>«Позвонить 112»</b> и&nbsp;номером скорой&nbsp;103.</p>
+          <p>Врачу событие приходит закреплённым вверху очереди, и&nbsp;там видно, что сделал пациент: открыл экран, позвонил или закрыл его.</p>
+          <p class="urgent__aside">Скорую сама система не&nbsp;вызывает: шкала и&nbsp;словарь&nbsp;— не&nbsp;диагноз, а&nbsp;ложный вызов без живого человека диспетчер не&nbsp;обработает. Звонит сам пациент.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics -->
+    <section class="metrics" id="metrics" aria-labelledby="metrics-title">
+      <div class="wrap metrics__grid">
+        <div class="metrics__copy">
+          <p class="eyebrow">Метрики</p>
+          <h2 id="metrics-title" class="h2">Проверили на&nbsp;155 сообщениях пациентов</h2>
+          <p>Сравнили две версии промпта на&nbsp;одном наборе: 155 сообщений, 172 размеченных факта. Главное&nbsp;— сколько сигналов риска модель находит: с&nbsp;7 из&nbsp;19 выросло до&nbsp;16.</p>
+          <dl class="kpis">
+            <div><dt>Ответов по&nbsp;схеме</dt><dd>100%</dd></div>
+            <div><dt>Сбоев</dt><dd>0</dd></div>
+            <div><dt>Ответ, медиана</dt><dd>1,8&nbsp;с</dd></div>
+          </dl>
+          <p class="fine">Это сравнение двух прогонов модели, а&nbsp;не&nbsp;клиническая валидация. Точность по&nbsp;препаратам снизилась&nbsp;— в&nbsp;основном из-за дублей; разбор лежит в&nbsp;репозитории.</p>
+        </div>
+        <figure class="chart reveal" aria-labelledby="chart-title">
+          <figcaption id="chart-title" class="chart__title">Качество извлечения: v1.1 → v1.2</figcaption>
+          <ul class="legend" aria-hidden="true">
+            <li><i class="dot dot--old"></i>v1.1</li>
+            <li><i class="dot dot--new"></i>v1.2</li>
+          </ul>
+          <div class="dumbbell" id="dumbbell" role="img" aria-describedby="chart-table"></div>
+          <div class="tooltip" id="tooltip" role="status" hidden></div>
+          <details class="chart__table">
+            <summary>Показать таблицей</summary>
+            <table id="chart-table">
+              <thead><tr><th scope="col">Метрика</th><th scope="col">v1.1</th><th scope="col">v1.2</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </details>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Stack -->
+    <section class="stack" aria-labelledby="stack-title">
+      <div class="wrap stack__grid">
+        <h2 id="stack-title" class="h3">На чём сделано</h2>
+        <dl class="stack__list">
+          <div><dt>Backend и ML</dt><dd>Python 3.12, FastAPI, Pydantic, PostgreSQL, SQLAlchemy, GigaChat</dd></div>
+          <div><dt>Клиент</dt><dd>Flutter / Dart&nbsp;— один код для веба, iOS и&nbsp;Android</dd></div>
+          <div><dt>Интеграции</dt><dd>REST API, HL7 FHIR R4, окно в&nbsp;ЕМИАС и&nbsp;1С:Медицина, Centrifugo</dd></div>
+          <div><dt>Инфраструктура</dt><dd>Docker Compose, GitHub Actions, 181 автотест</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Team -->
+    <section class="team" id="team" aria-labelledby="team-title">
+      <div class="wrap">
+        <p class="eyebrow">Команда</p>
+        <h2 id="team-title" class="h2">Медицина, разработка и&nbsp;данные в&nbsp;одной команде</h2>
+        <p class="team__lead">Мы из&nbsp;МГУ, СУ, ИТМО и&nbsp;УрФУ. Делали проекты для AIRI, УГМК и&nbsp;других.</p>
+        <ul class="people">
+          <li class="person reveal">
+            <img src="assets/team/davlet.jpg" width="268" height="268" loading="lazy" alt="">
+            <h3>Давлет Схаляхов</h3>
+            <p class="person__role">Медицинский консультант</p>
+            <p>5-й курс лечебного факультета Сеченовского университета, выпускник Школы&nbsp;21 по&nbsp;ИИ в&nbsp;медицине</p>
+            <a href="https://t.me/Dvlt_skh">@Dvlt_skh</a>
+          </li>
+          <li class="person reveal">
+            <img src="assets/team/kirill.jpg" width="268" height="268" loading="lazy" alt="">
+            <h3>Кирилл Варламов</h3>
+            <p class="person__role">Fullstack-разработчик</p>
+            <p>Ведущий Flutter-разработчик в&nbsp;Zig-Zag, победитель хакатона по&nbsp;ИИ от&nbsp;К2&nbsp;НейроТех</p>
+            <a href="https://t.me/enouhg">@enouhg</a>
+          </li>
+          <li class="person reveal">
+            <img src="assets/team/boris.jpg" width="268" height="268" loading="lazy" alt="">
+            <h3>Борис Черкасов</h3>
+            <p class="person__role">AI / Backend</p>
+            <p>CEO QamCore AI&nbsp;— сервисы для ментального здоровья. Выпускник МГУ, учится в&nbsp;Сколтехе</p>
+            <a href="https://t.me/bor1s_cherkas0v">@bor1s_cherkas0v</a>
+          </li>
+          <li class="person reveal">
+            <img src="assets/team/roman.jpg" width="268" height="268" loading="lazy" alt="">
+            <h3>Роман Зулкарнаев</h3>
+            <p class="person__role">Аналитик</p>
+            <p>Финалист хакатонов Газпрома, МИР и&nbsp;К2&nbsp;НейроТех, финалист олимпиады DANO по&nbsp;анализу данных</p>
+            <a href="https://t.me/cetraaa1">@cetraaa1</a>
+          </li>
+          <li class="person reveal">
+            <img src="assets/team/maria.jpg" width="268" height="268" loading="lazy" alt="">
+            <h3>Мария Нохова</h3>
+            <p class="person__role">Менеджер продукта</p>
+            <p>Стратегический менеджер в&nbsp;УГМК, топ-1 школы консалтинга SoC, проджект-менеджмент в&nbsp;МФТИ</p>
+            <a href="https://t.me/MariyaNokh">@MariyaNokh</a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta" aria-labelledby="cta-title">
+      <div class="rings rings--cta" aria-hidden="true"></div>
+      <div class="wrap cta__inner">
+        <h2 id="cta-title" class="display display--cta">Посмотрите сами</h2>
+        <p>Демо-стенд открыт: войдите врачом или пациентом без пароля. Все люди и&nbsp;данные там вымышлены.</p>
+        <div class="hero__actions">
+          <a class="btn btn--ink" href="https://my.onco-core.ru">Открыть демо
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10m-4-4 4 4-4 4"/></svg></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__inner">
+      <span class="brand brand--foot">
+        <svg class="brand__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark"/></svg>
+        Клинический компас
+      </span>
+      <p>Демонстрационный проект, не&nbsp;медицинское изделие. Тексты для пациентов&nbsp;— черновики до&nbsp;утверждения медицинским экспертом.</p>
+    </div>
+  </footer>
+
+  <svg class="sr" width="0" height="0" aria-hidden="true">
+    <symbol id="mark" viewBox="0 0 64 64">
+      <path fill="var(--aqua-strong)" d="M20 6h-3c-6 0-9 3-9 9v9c0 3-1 5-5 8 4 3 5 5 5 8v9c0 6 3 9 9 9h3v-7h-2c-2 0-3-1-3-3v-9c0-3-2-5-5-7 3-2 5-4 5-7v-9c0-2 1-3 3-3h2zM44 6h3c6 0 9 3 9 9v9c0 3 1 5 5 8-4 3-5 5-5 8v9c0 6-3 9-9 9h-3v-7h2c2 0 3-1 3-3v-9c0-3 2-5 5-7-3-2-5-4-5-7v-9c0-2-1-3-3-3h-2z"/>
+      <circle cx="32" cy="20" r="5" fill="var(--ink)"/>
+      <path fill="var(--ink)" d="M32 28c-5 0-7 2-7 6 0 6 3 17 6 19h2c3-2 6-13 6-19 0-4-2-6-7-6z"/>
+    </symbol>
+  </svg>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
