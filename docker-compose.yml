@@ -33,7 +33,11 @@ services:
     restart: unless-stopped
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # web — собрать Flutter Web в образе; web-prebuilt — взять готовый из web-dist/ (scripts/deploy.sh).
+        WEB_SOURCE: ${WEB_SOURCE:-web}
     image: clinical-compass:0.2.0
     depends_on:
       db:

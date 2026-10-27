@@ -1,5 +1,10 @@
 # syntax=docker/dockerfile:1.7
 # Один образ: API (FastAPI) + собранный Flutter Web, отдаваемый с того же адреса.
+#
+# По умолчанию Flutter Web собирается внутри образа (CI, `docker compose up --build`).
+# Для стенда веб собирают на машине разработчика и кладут в `web-dist/`, а образ берёт его готовым:
+#   docker build --build-arg WEB_SOURCE=web-prebuilt .   (так делает scripts/deploy.sh)
+ARG WEB_SOURCE=web
 
 # --- 1. Flutter Web ---------------------------------------------------------------------------
 FROM ghcr.io/cirruslabs/flutter:3.44.0 AS web
@@ -9,6 +14,12 @@ RUN flutter pub get
 COPY lib lib
 COPY web web
 RUN flutter build web --release --no-web-resources-cdn
+
+# Готовая сборка из web-dist/. BuildKit собирает только ту из двух стадий, что выбрана в WEB_SOURCE.
+FROM scratch AS web-prebuilt
+COPY web-dist /src/build/web
+
+FROM ${WEB_SOURCE} AS web-final
 
 # --- 2. Python-зависимости и пакет ---------------------------------------------------------------
 FROM python:3.12-slim AS backend-build
@@ -27,7 +38,7 @@ RUN groupadd --system app && useradd --system --gid app --home /app app \
 WORKDIR /app
 COPY --from=backend-build /app/.venv /app/.venv
 COPY contracts /app/contracts
-COPY --from=web /src/build/web /app/web
+COPY --from=web-final /src/build/web /app/web
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     CC_CONTRACTS_DIR=/app/contracts \

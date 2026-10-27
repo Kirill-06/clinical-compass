@@ -15,19 +15,25 @@
 | Домен | `/etc/caddy/sites/onco-core.caddy`: `my.onco-core.ru` → приложение `127.0.0.1:8010`, `/connection/*` → Centrifugo; `onco-core.ru` → лендинг, старые ссылки на сервис (`/mis-demo.html`, `/docs`, `/integrations/*`) перенаправляются на `my.`; `compass.lamagate.com` тоже ведёт на `my.` |
 | База | PostgreSQL в томе `clinical-compass_db-data`, вложения — `clinical-compass_files` |
 
-### Обновить стенд до текущего `main`
+### Обновить стенд
 
-С компьютера разработчика, из корня репозитория:
-
-```bash
-git archive --format=tar origin/main | ssh -p 2222 kirill@155.212.15.238 'tar -x -C ~/apps/clinical-compass'
-```
+Из корня репозитория, на закоммиченном коде (обычно это `main`):
 
 ```bash
-ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose -p clinical-compass up -d --build'
+make deploy
 ```
 
-Миграции применяются при старте контейнера; `.env` архив не трогает.
+Скрипт `scripts/deploy.sh` собирает Flutter Web на этой машине (около 20 секунд), отправляет на сервер код
+текущего коммита и готовую сборку в `~/apps/clinical-compass/web-dist/`, а сервер собирает только
+Python-часть образа (`WEB_SOURCE=web-prebuilt`) и перезапускает приложение. В конце скрипт ждёт ответа
+`/health`. Если в `lib/`, `web/`, `backend/` или `contracts/` есть незакоммиченные правки, скрипт остановится:
+код и веб должны быть из одного коммита.
+
+Миграции применяются при старте контейнера; база, вложения и `.env` не трогаются.
+
+Собирать Flutter на сервере не стоит: у него 4 ядра на два десятка сервисов, и сборка занимает больше
+10 минут. Обычный `docker compose up --build` без `WEB_SOURCE` по-прежнему собирает веб внутри образа —
+так работают CI и запуск одной командой из README.
 
 ### Проверить
 
@@ -55,11 +61,7 @@ ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/clinical-compass && docker compose 
 Обновить:
 
 ```bash
-rsync -az --delete -e 'ssh -p 2222' landing/ kirill@155.212.15.238:apps/onco-landing/
-```
-
-```bash
-ssh -p 2222 kirill@155.212.15.238 'cd ~/apps/onco-landing && docker compose -p onco-landing up -d --build'
+make deploy-landing
 ```
 
 Посмотреть локально: `python3 -m http.server 8090 --directory landing`.

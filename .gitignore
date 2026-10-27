@@ -60,3 +60,6 @@ evaluation/out/
 
 # Local evaluation runs
 evaluation/out_gigachat_*/
+
+# Готовая веб-сборка для выкатки (scripts/deploy.sh)
+web-dist/

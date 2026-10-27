@@ -7,7 +7,7 @@ AI := cd ai_service && PYTHONPATH=src:../backend/src uv run
 FLUTTER ?= flutter
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format typecheck test test-backend test-ai test-flutter check web run migrate seed up down
+.PHONY: help setup lint format typecheck test test-backend test-ai test-flutter check web run migrate seed up down deploy deploy-landing
 
 help: ## Показать команды
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}'
@@ -66,3 +66,9 @@ up: ## Docker: PostgreSQL + приложение
 
 down: ## Остановить Docker-стенд
 	docker compose down
+
+deploy: ## Выкатить стенд my.onco-core.ru (веб собирается здесь, на сервере — только backend)
+	./scripts/deploy.sh app
+
+deploy-landing: ## Выкатить лендинг onco-core.ru
+	./scripts/deploy.sh landing
