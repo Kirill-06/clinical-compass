@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import 'package:clinical_compass/core/design/loader.dart';
 import 'package:clinical_compass/core/design/components.dart';
 import 'package:clinical_compass/core/design/tokens.dart';
 import 'package:clinical_compass/core/design/typography.dart';
@@ -167,9 +168,7 @@ class _ChatComposerState extends State<ChatComposer> {
             IconButton.filled(
               tooltip: widget.sendLabel,
               onPressed: _sending ? null : () => unawaited(_send()),
-              icon: _sending
-                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.send),
+              icon: _sending ? const CompassSpinner(size: 20, badge: false) : const Icon(Icons.send),
             )
           else
             FilledButton.icon(

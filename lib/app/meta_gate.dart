@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:clinical_compass/core/design/components.dart';
+import 'package:clinical_compass/core/design/loader.dart';
 import 'package:clinical_compass/data/api_client.dart';
 
 /// Показывает экраны только после загрузки шкал и справочников (`GET /meta`).
@@ -29,7 +30,7 @@ class _MetaGateState extends State<MetaGate> {
                   message: '${snapshot.error}',
                   onRetry: () => setState(() => _loading = widget.api.loadMeta()),
                 )
-              : const LoadingState(label: 'Подключение к серверу…'),
+              : const SplashLoader(label: 'Подключаемся к серверу…'),
         );
       },
     );

@@ -1,46 +1,83 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
+  <!-- Подставляется из `flutter build --base-href`; должен начинаться и заканчиваться на «/». -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Клинический компас — демо цифрового ассистента врача. Вымышленные данные.">
+  <meta name="theme-color" content="#F6F7F9">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Клинический компас">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>Клинический компас</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Заставка, пока скачивается и запускается Flutter. Повторяет SplashLoader из lib/core/design/loader.dart,
+       поэтому переход на первый кадр приложения незаметен. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #F6F7F9; }
+    #splash {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      background: #F6F7F9; color: #17212B;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Segoe UI", sans-serif;
+      transition: opacity 220ms ease-out;
+    }
+    #splash.is-done { opacity: 0; pointer-events: none; }
+    #splash svg { width: 56px; height: 56px; margin-bottom: 12px; }
+    #splash .needle { transform-origin: 28px 28px; animation: turn 1.6s infinite; }
+    #splash .title { font-size: 17px; font-weight: 600; }
+    #splash .label { font-size: 14px; color: #66717D; }
+    #splash .hint {
+      max-width: 280px; margin-top: 20px; text-align: center;
+      font-size: 13px; line-height: 1.4; color: #66717D;
+      opacity: 0; transition: opacity 400ms;
+    }
+    #splash .hint.is-shown { opacity: 1; }
+    @keyframes turn {
+      0% { transform: rotate(0deg); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+      70%, 100% { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #splash .needle { animation: none; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="splash" role="status" aria-live="polite">
+    <svg viewBox="0 0 56 56" aria-hidden="true">
+      <rect width="56" height="56" rx="12.3" fill="#0D5966"/>
+      <g class="needle">
+        <path d="M28 10.6 35.3 28H20.7z" fill="#fff"/>
+        <path d="M28 45.4 35.3 28H20.7z" fill="#fff" fill-opacity=".45"/>
+      </g>
+      <circle cx="28" cy="28" r="2.5" fill="#0D5966"/>
+    </svg>
+    <div class="title">Клинический компас</div>
+    <div class="label">Загружаем приложение…</div>
+    <div class="hint" id="splash-hint">Первый запуск занимает до минуты: браузер скачивает приложение. Дальше оно открывается быстро.</div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    (function () {
+      var splash = document.getElementById('splash');
+      var hint = setTimeout(function () {
+        document.getElementById('splash-hint').classList.add('is-shown');
+      }, 6000);
+      window.addEventListener('flutter-first-frame', function () {
+        clearTimeout(hint);
+        splash.classList.add('is-done');
+        setTimeout(function () { splash.remove(); }, 260);
+      }, { once: true });
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:clinical_compass/app/app_services.dart';
+import 'package:clinical_compass/core/design/loader.dart';
 import 'package:clinical_compass/core/design/components.dart';
 import 'package:clinical_compass/core/design/tokens.dart';
 import 'package:clinical_compass/core/design/typography.dart';
@@ -325,7 +326,7 @@ class _QuestionnaireFlowScreenState extends State<QuestionnaireFlowScreen> {
               ? const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                    CompassSpinner(size: 20, badge: false),
                     SizedBox(width: Space.x3),
                     Text('Отправляем…'),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clinical_compass/core/design/loader.dart';
 import 'package:clinical_compass/core/design/tokens.dart';
 import 'package:clinical_compass/core/design/typography.dart';
 
@@ -308,7 +309,7 @@ class LoadingState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4)),
+            const CompassSpinner(size: 36),
             const SizedBox(height: Space.x3),
             Text(label, style: AppType.small),
           ],
