@@ -16,6 +16,17 @@ ssh_opts=(-p "$port" -o ServerAliveInterval=60 -o ServerAliveCountMax=5)
 
 cd "$repo_root"
 
+# Если первый в PATH git не запускается (например, старая сборка под Intel без Rosetta),
+# берём системный — он нужен и этому скрипту, и Flutter.
+if ! git --version >/dev/null 2>&1; then
+  if /usr/bin/git --version >/dev/null 2>&1; then
+    export PATH="/usr/bin:$PATH"
+  else
+    echo 'Не запускается git. Проверьте, какой git первый в PATH: command -v git' >&2
+    exit 1
+  fi
+fi
+
 remote() { ssh "${ssh_opts[@]}" "$host" "$@"; }
 
 deploy_landing() {
@@ -26,7 +37,9 @@ deploy_landing() {
 
 deploy_app() {
   # Код и веб должны быть из одного коммита: незакоммиченные правки не выкатываем.
-  if [[ -n "$(git status --porcelain -- lib web backend contracts pubspec.yaml pubspec.lock Dockerfile docker-compose.yml)" ]]; then
+  local dirty
+  dirty="$(git status --porcelain -- lib web backend contracts pubspec.yaml pubspec.lock Dockerfile docker-compose.yml)"
+  if [[ -n "$dirty" ]]; then
     echo 'Есть незакоммиченные изменения — закоммитьте их или уберите перед выкаткой.' >&2
     exit 1
   fi
