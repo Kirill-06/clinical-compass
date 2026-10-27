@@ -1,4 +1,4 @@
-"""Назначения врача: план приёма, расписание опросников, клинический профиль, маршрутизация."""
+"""Назначения врача: план приёма, препараты, расписание опросников, клинический профиль, маршрутизация."""
 
 from datetime import datetime
 
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from clinical_compass.db.models import (
     ClinicalProfileRow,
     MedicationPlanRow,
+    PrescriptionRow,
     QuestionnaireScheduleRow,
     RoutingDecisionRow,
 )
@@ -26,6 +27,19 @@ class CareRepository:
             .order_by(MedicationPlanRow.start_date.desc())
         )
         return self._s.scalars(stmt).first()
+
+    def prescriptions(self, patient_id: str, *, active_only: bool) -> list[PrescriptionRow]:
+        """Сначала новые; отменённые назначения остаются в истории врача."""
+        stmt = select(PrescriptionRow).where(PrescriptionRow.patient_id == patient_id)
+        if active_only:
+            stmt = stmt.where(PrescriptionRow.cancelled_at.is_(None))
+        return list(self._s.scalars(stmt.order_by(PrescriptionRow.created_at.desc(), PrescriptionRow.id)))
+
+    def prescription(self, prescription_id: str) -> PrescriptionRow | None:
+        return self._s.get(PrescriptionRow, prescription_id)
+
+    def add_prescription(self, row: PrescriptionRow) -> None:
+        self._s.add(row)
 
     def schedule(self, patient_id: str, instrument: Instrument) -> QuestionnaireSchedule | None:
         row = self._s.get(QuestionnaireScheduleRow, (patient_id, instrument.value))

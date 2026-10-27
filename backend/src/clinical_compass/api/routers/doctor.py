@@ -5,10 +5,16 @@ from typing import Any
 from fastapi import APIRouter, Response, status
 
 from clinical_compass.api.deps import DepsDep, PrincipalDep
-from clinical_compass.api.schemas import ContactDeadlineRequest, RoutingRequest, ScheduleRequest
+from clinical_compass.api.schemas import (
+    ContactDeadlineRequest,
+    PrescriptionRequest,
+    RoutingRequest,
+    ScheduleRequest,
+)
 from clinical_compass.domain.enums import Instrument
 from clinical_compass.services.adverse_events import AdverseEventService
 from clinical_compass.services.doctors import DoctorService
+from clinical_compass.services.prescriptions import PrescriptionDraft, PrescriptionService
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
 
@@ -59,6 +65,24 @@ def set_contact_deadline(
     patient_id: str, body: ContactDeadlineRequest, deps: DepsDep, principal: PrincipalDep
 ) -> Json:
     return DoctorService(deps).set_contact_deadline(principal, patient_id, body.deadline)
+
+
+@router.get("/patients/{patient_id}/prescriptions")
+def prescriptions(patient_id: str, deps: DepsDep, principal: PrincipalDep) -> list[Json]:
+    return PrescriptionService(deps).for_doctor(principal, patient_id)
+
+
+@router.post("/patients/{patient_id}/prescriptions", status_code=status.HTTP_201_CREATED)
+def prescribe(patient_id: str, body: PrescriptionRequest, deps: DepsDep, principal: PrincipalDep) -> Json:
+    draft = PrescriptionDraft(
+        drug=body.drug, dosage=body.dosage, regimen=body.regimen, duration=body.duration, note=body.note
+    )
+    return PrescriptionService(deps).prescribe(principal, patient_id, draft)
+
+
+@router.post("/prescriptions/{prescription_id}/cancel")
+def cancel_prescription(prescription_id: str, deps: DepsDep, principal: PrincipalDep) -> Json:
+    return PrescriptionService(deps).cancel(principal, prescription_id)
 
 
 @router.get("/adverse-events")

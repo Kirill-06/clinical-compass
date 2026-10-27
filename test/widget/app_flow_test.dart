@@ -152,6 +152,30 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('doctor prescribes a drug and the patient sees it in the pharmacy list', (tester) async {
+    await pumpApp(tester);
+    await tapText(tester, 'Миронова Анна Сергеевна');
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/doctor/patients/p_a1');
+    await settle(tester);
+    await tapText(tester, 'Назначить');
+    await tester.enterText(find.widgetWithText(TextField, 'Препарат'), 'Магне B6');
+    await tester.enterText(find.widgetWithText(TextField, 'Дозировка'), '1 таблетка');
+    await tester.enterText(find.widgetWithText(TextField, 'Как принимать'), '3 раза в день во время еды');
+    await tapText(tester, 'Назначить');
+    expect(find.text('Магне B6 · 1 таблетка'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(390, 844);
+    await settle(tester);
+    await switchTo(tester, 'Корнилова Елена Андреевна');
+    await tapText(tester, 'Приём');
+    expect(find.text('Мои назначения'), findsOneWidget);
+    expect(find.text('Магне B6 · 1 таблетка'), findsOneWidget);
+    expect(find.text('Авиандр · 1 таблетка'), findsOneWidget);
+    await tapText(tester, 'Для аптеки');
+    expect(find.text('Список для аптеки'), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets('doctor sees side effects, including ones outside the leaflet', (tester) async {
     await pumpApp(tester);
     await tapText(tester, 'Миронова Анна Сергеевна');

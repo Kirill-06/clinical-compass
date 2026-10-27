@@ -90,6 +90,14 @@ class RoutingRequest(_Request):
     decision: RouteDecision
 
 
+class PrescriptionRequest(_Request):
+    drug: str = Field(min_length=1, max_length=200)
+    dosage: str = Field(min_length=1, max_length=200)
+    regimen: str = Field(min_length=1, max_length=300)
+    duration: str | None = Field(default=None, max_length=100)
+    note: str | None = Field(default=None, max_length=1000)
+
+
 class ContactDeadlineRequest(_Request):
     deadline: AwareDatetime
 

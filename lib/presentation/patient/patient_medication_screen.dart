@@ -7,6 +7,7 @@ import 'package:clinical_compass/core/design/typography.dart';
 import 'package:clinical_compass/domain/json.dart';
 import 'package:clinical_compass/presentation/patient/intake_slots.dart';
 import 'package:clinical_compass/presentation/patient/patient_shell.dart';
+import 'package:clinical_compass/presentation/patient/prescription_list.dart';
 import 'package:clinical_compass/presentation/shared/adherence_view.dart';
 import 'package:clinical_compass/presentation/shared/live_future.dart';
 
@@ -27,6 +28,7 @@ class PatientMedicationScreen extends StatelessWidget {
         final (d, h) = data;
         final plan = d['plan'] is Map ? asJson(d['plan']) : null;
         final adherence = h['adherence'] is Map ? asJson(h['adherence']) : null;
+        final prescriptions = [for (final p in h['prescriptions'] as List? ?? const []) asJson(p)];
         return PatientPage(
           children: [
             Semantics(header: true, child: const Text('Приём препарата', style: AppType.pageTitle)),
@@ -36,6 +38,8 @@ class PatientMedicationScreen extends StatelessWidget {
               style: AppType.bodySecondary,
             ),
             const SizedBox(height: Space.x5),
+            PrescriptionList(prescriptions: prescriptions),
+            const SizedBox(height: Space.x6),
             if (plan == null)
               const Panel(child: Text('Врач пока не назначил план приёма.', style: AppType.bodySecondary))
             else ...[

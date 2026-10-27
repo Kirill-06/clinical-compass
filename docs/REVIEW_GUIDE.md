@@ -3,7 +3,7 @@
 Как быстро найти в репозитории то, что оценивается. Для каждого пункта: что посмотреть на стенде,
 где это в коде и какие тесты это доказывают.
 
-**Стенд:** https://onco-core.ru · окно в МИС: https://onco-core.ru/mis-demo.html
+**Стенд:** https://my.onco-core.ru · окно в МИС: https://my.onco-core.ru/mis-demo.html
 (все люди вымышлены, вход по выбору аккаунта без пароля).
 
 **Проверить всё одной командой** (то же, что CI на каждый push и PR):
@@ -84,7 +84,7 @@ make check
 - **Слои с зависимостями сверху вниз:** `api → services → repositories → db`; `domain` — чистая логика без БД и HTTP. Подробно — [backend/README.md](../backend/README.md).
 - **Контракты как данные:** правила, шаблоны текстов, шкалы и справочники лежат в `contracts/` и проверяются при старте (`clinical-compass check-contracts`); приложение получает их через `GET /meta`, тексты не дублируются в коде.
 - **Статическая проверка:** ruff (строгий набор правил) и `mypy --strict` для backend и AI-сервиса, `flutter analyze` — в CI на каждый PR.
-- **Тесты:** backend 115, AI-сервис 39, Flutter 21 — UI-тесты работают поверх настоящего Python-backend, а не моков.
+- **Тесты:** backend 120, AI-сервис 39, Flutter 22 — UI-тесты работают поверх настоящего Python-backend, а не моков.
 - **Миграции БД:** Alembic, `backend/src/clinical_compass/db/alembic/versions/`.
 - **Решения и открытые вопросы:** [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md).
 

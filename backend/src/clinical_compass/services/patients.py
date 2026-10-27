@@ -99,6 +99,7 @@ class PatientService:
                 self._present.response(q) for q in reversed(self._d.repos.facts.questionnaires(patient_id))
             ],
             "plan": self._present.plan(patient_id),
+            "prescriptions": self._present.prescriptions(patient_id, active_only=True),
             "adherence": adherence.to_json(include_slots=True) if adherence else None,
             "messages": self._present.messages(patient_id, for_patient=True),
             "symptoms": self._present.symptom_rows(patient_id, form_only=True),

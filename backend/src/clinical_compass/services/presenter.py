@@ -14,6 +14,7 @@ from clinical_compass.db.models import (
     BookingTaskRow,
     MessageRow,
     PatientRow,
+    PrescriptionRow,
     SymptomEventRow,
 )
 from clinical_compass.domain.derived import Adherence, ScheduleStatus, adherence, latest_by_slot
@@ -94,6 +95,26 @@ class Presenter:
             "instructions": plan.instructions,
             "slots": list(plan.slots),
             "start_date": plan.start_date.isoformat(),
+        }
+
+    def prescriptions(self, patient_id: str, *, active_only: bool) -> list[Json]:
+        return [
+            self.prescription(p)
+            for p in self._d.repos.care.prescriptions(patient_id, active_only=active_only)
+        ]
+
+    def prescription(self, p: PrescriptionRow) -> Json:
+        doctor = self._d.repos.people.doctor(p.doctor_id)
+        return {
+            "id": p.id,
+            "drug": p.drug,
+            "dosage": p.dosage,
+            "regimen": p.regimen,
+            "duration": p.duration,
+            "note": p.note,
+            "doctor": doctor.short_name if doctor else None,
+            "created_at": iso(p.created_at),
+            "cancelled_at": iso(p.cancelled_at),
         }
 
     def response(self, q: QuestionnaireResponse) -> Json:

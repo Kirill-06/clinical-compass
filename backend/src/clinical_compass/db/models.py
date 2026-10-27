@@ -127,6 +127,24 @@ class MedicationPlanRow(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class PrescriptionRow(Base):
+    """Препарат, который врач выписал пациенту. Активные назначения пациент видит списком для аптеки."""
+
+    __tablename__ = "prescriptions"
+
+    id: Mapped[str] = mapped_column(String(_ID), primary_key=True)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id"))
+    drug: Mapped[str] = mapped_column(String(200))
+    dosage: Mapped[str] = mapped_column(String(200))
+    regimen: Mapped[str] = mapped_column(String(300))
+    duration: Mapped[str | None] = mapped_column(String(100))
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime]
+    cancelled_at: Mapped[datetime | None]
+    cancelled_by: Mapped[str | None] = mapped_column(String(_ID))
+
+
 class QuestionnaireScheduleRow(Base):
     __tablename__ = "questionnaire_schedules"
 

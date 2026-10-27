@@ -97,6 +97,7 @@ class DoctorService:
                 self._present.response(q) for q in self._d.repos.facts.questionnaires(patient_id)
             ],
             "plan": self._present.plan(patient_id),
+            "prescriptions": self._present.prescriptions(patient_id, active_only=False),
             "adherence_7d": adherence_7.to_json() if adherence_7 else None,
             "adherence_14d": adherence_14.to_json(include_slots=True) if adherence_14 else None,
             "symptoms": self._present.symptom_rows(patient_id, form_only=False),

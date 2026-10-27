@@ -13,6 +13,7 @@ import 'package:clinical_compass/domain/json.dart';
 import 'package:clinical_compass/presentation/doctor/alert_card.dart';
 import 'package:clinical_compass/presentation/doctor/doctor_shell.dart';
 import 'package:clinical_compass/presentation/doctor/patient_detail_parts.dart';
+import 'package:clinical_compass/presentation/doctor/prescriptions_panel.dart';
 import 'package:clinical_compass/presentation/shared/adherence_view.dart';
 import 'package:clinical_compass/presentation/shared/brand.dart';
 import 'package:clinical_compass/presentation/shared/labels.dart';
@@ -57,6 +58,11 @@ class _Dossier extends StatelessWidget {
     final side = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        PrescriptionsPanel(
+          patientId: pid,
+          prescriptions: [for (final p in d['prescriptions'] as List? ?? const []) asJson(p)],
+        ),
+        const SizedBox(height: Space.x5),
         SchedulesPanel(patientId: pid, schedules: [for (final s in d['schedules']! as List) asJson(s)]),
         const SizedBox(height: Space.x5),
         _AdherencePanel(d: d),

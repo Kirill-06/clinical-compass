@@ -17,6 +17,7 @@ from clinical_compass.db.models import (
     ExternalIdentityRow,
     MedicationPlanRow,
     PatientRow,
+    PrescriptionRow,
 )
 from clinical_compass.domain.enums import (
     ExternalSystem,
@@ -238,6 +239,19 @@ def _people(deps: Deps, today: date, at: Callable[[int, int], datetime]) -> None
                 start_date=today + timedelta(days=spec.start_offset),
                 created_by=spec.doctor_id,
                 active=True,
+            ),
+            PrescriptionRow(
+                id=f"rx_{spec.id}",
+                patient_id=spec.id,
+                doctor_id=spec.doctor_id,
+                drug=DRUG,
+                dosage="1 таблетка",
+                regimen="2 раза в день, утром и вечером",
+                duration="8 недель, затем контрольный визит",
+                note=None,
+                created_at=start,
+                cancelled_at=None,
+                cancelled_by=None,
             ),
         )
 

@@ -337,6 +337,26 @@ class ApiClient extends ChangeNotifier {
     await _call('POST', '/doctor/patients/$pid/contact-deadline', body: {'deadline': iso(deadline)}, write: true),
   );
 
+  /// Назначить препарат пациенту. Пациент увидит его в списке назначений на вкладке «Приём».
+  Future<Json> prescribe(
+    String pid, {
+    required String drug,
+    required String dosage,
+    required String regimen,
+    String? duration,
+    String? note,
+  }) async => _obj(
+    await _call(
+      'POST',
+      '/doctor/patients/$pid/prescriptions',
+      body: {'drug': drug, 'dosage': dosage, 'regimen': regimen, 'duration': ?duration, 'note': ?note},
+      write: true,
+    ),
+  );
+
+  Future<Json> cancelPrescription(String prescriptionId) async =>
+      _obj(await _call('POST', '/doctor/prescriptions/$prescriptionId/cancel', write: true));
+
   // -------------------------------------------------------------- admin
 
   Future<List<Json>> bookingTasks() async => _list(await _call('GET', '/admin/booking-tasks'));
