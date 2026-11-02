@@ -35,6 +35,7 @@ from clinical_compass.domain.instruments import ScoringError, score_items
 from clinical_compass.domain.state import LabResult, MedicationIntake, QuestionnaireResponse, SymptomEvent
 from clinical_compass.services.access import AccessPolicy
 from clinical_compass.services.context import Deps, Principal, new_id
+from clinical_compass.services.engagement import engagement_for_patient
 from clinical_compass.services.errors import ConflictError, InvalidInputError, NotFoundError
 from clinical_compass.services.presenter import Json, Presenter
 from clinical_compass.services.realtime import chat_channel
@@ -89,6 +90,7 @@ class PatientService:
             "unread_messages": self._d.repos.messages.unread_count(patient_id, sender="doctor"),
             "routing": self._present.visible_routing(patient_id),
             "recent": self._present.timeline(patient_id, for_patient=True)[:6],
+            "engagement": engagement_for_patient(self._d, patient_id),
         }
 
     def history(self, principal: Principal, patient_id: str) -> Json:
