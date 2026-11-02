@@ -8,8 +8,10 @@ import 'package:clinical_compass/core/design/typography.dart';
 import 'package:clinical_compass/core/format/fmt.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/domain/json.dart';
+import 'package:clinical_compass/presentation/patient/engagement_card.dart';
 import 'package:clinical_compass/presentation/patient/intake_slots.dart';
 import 'package:clinical_compass/presentation/patient/patient_shell.dart';
+import 'package:clinical_compass/presentation/patient/support_note.dart';
 import 'package:clinical_compass/presentation/shared/labels.dart';
 import 'package:clinical_compass/presentation/shared/live_future.dart';
 import 'package:clinical_compass/presentation/shared/notices.dart';
@@ -47,6 +49,12 @@ class PatientHomeScreen extends StatelessWidget {
               NoticeList(notices: notices),
               const SizedBox(height: Space.x2),
             ],
+            if (d['engagement'] is Map) ...[
+              EngagementCard(progress: asJson(d['engagement'])),
+              const SizedBox(height: Space.x3),
+              const SupportNote(),
+              const SizedBox(height: Space.x4),
+            ],
             const SectionHeader(title: 'Опросники', level: 2),
             const SizedBox(height: Space.x2),
             for (final s in schedules) ...[_QuestionnaireCard(schedule: s, now: now), const SizedBox(height: Space.x3)],
@@ -67,16 +75,22 @@ class PatientHomeScreen extends StatelessWidget {
                     style: AppType.small,
                   ),
                   const SizedBox(height: Space.x3),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push('/patient/symptom'),
-                    icon: const Icon(Icons.healing_outlined, size: 18),
-                    label: const Text('Отметить самочувствие'),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/patient/symptom'),
+                      icon: const Icon(Icons.healing_outlined, size: 18),
+                      label: const Text('Отметить самочувствие'),
+                    ),
                   ),
                   const SizedBox(height: Space.x2),
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/patient/chat'),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                    label: const Text('Написать врачу или приложить файл'),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => context.go('/patient/chat'),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: const Text('Написать врачу или приложить файл'),
+                    ),
                   ),
                   if (unread > 0) ...[
                     const SizedBox(height: Space.x2),
