@@ -106,10 +106,10 @@ class _AlertCardState extends State<AlertCard> {
               spacing: Space.x2,
               runSpacing: Space.x1,
               children: [
-                TextButton.icon(
+                OutlinedButton.icon(
                   onPressed: _toggle,
                   icon: Icon(_open ? Icons.expand_less : Icons.help_outline, size: 18),
-                  label: Text(_open ? 'Скрыть' : 'Почему?'),
+                  label: Text(_open ? 'Скрыть объяснение' : 'Почему этот алерт?'),
                 ),
                 if (widget.showPatient)
                   TextButton(

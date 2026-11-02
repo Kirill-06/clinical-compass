@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Durations;
 import 'package:go_router/go_router.dart';
 
 import 'package:clinical_compass/app/app_services.dart';
+import 'package:clinical_compass/core/design/tokens.dart';
 import 'package:clinical_compass/domain/contract.dart';
 import 'package:clinical_compass/presentation/admin/admin_screen.dart';
 import 'package:clinical_compass/presentation/doctor/adverse_events_screen.dart';
@@ -21,7 +22,19 @@ import 'package:clinical_compass/presentation/patient/questionnaire_flow_screen.
 import 'package:clinical_compass/presentation/patient/symptom_screen.dart';
 import 'package:clinical_compass/presentation/shared/demo_accounts.dart';
 
-Page<void> _page(GoRouterState s, Widget child) => NoTransitionPage<void>(key: s.pageKey, child: child);
+Page<void> _page(GoRouterState s, Widget child) => CustomTransitionPage<void>(
+  key: s.pageKey,
+  transitionDuration: Durations.normal,
+  reverseTransitionDuration: Durations.fast,
+  child: child,
+  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+      child: child,
+    );
+  },
+);
 
 /// Навигация по ролям. Это удобство интерфейса; доступ к данным
 /// проверяет backend на каждом запросе.

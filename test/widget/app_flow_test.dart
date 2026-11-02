@@ -46,7 +46,7 @@ void main() {
     expect(find.text('Очередь'), findsWidgets);
     expect(find.text('Закреплено до принятия'), findsWidgets);
     expect(find.text('Сигнал о мыслях о смерти или самоповреждении'), findsOneWidget);
-    await tester.tap(find.text('Почему?').first);
+    await tester.tap(find.text('Почему этот алерт?').first);
     await settle(tester);
     expect(find.textContaining('Правило R_SELF_HARM'), findsOneWidget);
     await unmount(tester);
