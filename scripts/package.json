@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "build:pitch": "node build_pitch_v03.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "3.12.0"
+  }
+}

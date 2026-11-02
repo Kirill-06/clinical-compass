@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:clinical_compass/app/app.dart';
 import 'package:clinical_compass/app/app_services.dart';
@@ -129,6 +130,7 @@ class RootZoneTransport implements ApiTransport {
 
 void useRealBackend() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     // flutter_test по умолчанию запрещает настоящие HTTP-запросы.
     HttpOverrides.global = null;
     await TestBackend.prepareTemplate();

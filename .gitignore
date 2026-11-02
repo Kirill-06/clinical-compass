@@ -1,4 +1,5 @@
 # Miscellaneous
+node_modules/
 *.class
 *.log
 *.pyc
@@ -63,3 +64,7 @@ evaluation/out_gigachat_*/
 
 # Готовая веб-сборка для выкатки (scripts/deploy.sh)
 web-dist/
+
+# Reproducible demo-video outputs and supplied visual reference
+/artifacts/demo/
+/clinical-compass-demo.mp4

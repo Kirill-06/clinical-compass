@@ -1,0 +1,17 @@
+{
+  "dataset": {"messages": 155, "gold_entities": 183},
+  "overall": {
+    "tp": 142, "fp": 82, "fn": 41,
+    "precision": 0.633929, "recall": 0.775956, "f1": 0.697789
+  },
+  "per_entity_type": {
+    "lab_mention": {"tp": 4, "fp": 1, "fn": 1, "f1": 0.8},
+    "medication": {"tp": 29, "fp": 25, "fn": 5, "f1": 0.659091},
+    "risk_signal": {"tp": 15, "fp": 5, "fn": 4, "f1": 0.769231},
+    "symptom": {"tp": 94, "fp": 51, "fn": 31, "f1": 0.696296}
+  },
+  "schema_pass_rate": 1.0,
+  "failed_messages": 0,
+  "latency_ms": {"p50": 1937.241, "p95": 3529.875},
+  "_provenance": "Сверено 02.11.2026 с evaluation/results/gigachat_v1_2_medical_rc1/metrics.json из локального репозитория; сохранённый результат, модель повторно не запускалась."
+}
